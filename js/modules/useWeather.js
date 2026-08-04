@@ -68,7 +68,7 @@ export function useWeather(showToast) {
       const temps = hourly24Weather.value.map(h => h.temp);
       const segments = calculateWeatherSegments(hourly24Weather.value);
 
-      // 【精细化 UI 重构】：彻底解决 Canvas Emoji 被小白框裁剪剩 1/4 的问题
+      // 【黄油小熊 🐻 专属高清 Canvas 插件算法】
       const mojiColorBlockPlugin = {
         id: 'mojiColorBlock',
         beforeDatasetsDraw(chart) {
@@ -91,7 +91,7 @@ export function useWeather(showToast) {
             const isRain = seg.icon.includes('🌧️') || seg.icon.includes('⛈️') || seg.icon.includes('🌦️');
             const isSun = seg.icon.includes('☀️');
 
-            // 1. 半透明天气区段色块
+            // 1. 半透明区段色块 (柔和温暖调性)
             if (isDark) {
               ctx.fillStyle = isRain 
                 ? 'rgba(30, 58, 138, 0.45)' 
@@ -109,33 +109,51 @@ export function useWeather(showToast) {
             const centerX = (leftX + rightX) / 2;
             const iconY = bottom - 42;
 
-            // 2. 使用宽适的高清半透明胶囊底座，给 Emoji 留足 100% 完整的绘图边界，绝不裁切
-            const pillW = 32;
-            const pillH = 26;
-            const pillX = centerX - pillW / 2;
-            const pillY = iconY - pillH / 2;
+            // 2. 绘制与左上角一致的精致【黄油小熊 🐻 专属金边底座徽章】
+            const bearBadgeR = 14;
+            
+            // 外框微阴影
+            ctx.shadowColor = 'rgba(217, 119, 6, 0.2)';
+            ctx.shadowBlur = 6;
+            ctx.shadowOffsetY = 2;
 
-            ctx.fillStyle = isDark ? 'rgba(30, 41, 59, 0.85)' : 'rgba(255, 255, 255, 0.9)';
+            // 渐变底座：暖黄黄油渐变
+            const badgeGrad = ctx.createLinearGradient(centerX - bearBadgeR, iconY - bearBadgeR, centerX + bearBadgeR, iconY + bearBadgeR);
+            if (isDark) {
+              badgeGrad.addColorStop(0, '#78350F');
+              badgeGrad.addColorStop(1, '#451A03');
+            } else {
+              badgeGrad.addColorStop(0, '#FBBF24');
+              badgeGrad.addColorStop(1, '#FEF08A');
+            }
+
+            ctx.fillStyle = badgeGrad;
             ctx.beginPath();
-            ctx.roundRect(pillX, pillY, pillW, pillH, 12);
+            ctx.arc(centerX, iconY, bearBadgeR, 0, Math.PI * 2);
             ctx.fill();
 
-            // 3. 100% 完整渲染的清晰 Emoji 图标
-            ctx.font = '18px "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
+            // 纯白 1.5px 精致圆环描边
+            ctx.shadowColor = 'transparent';
+            ctx.strokeStyle = isDark ? '#F59E0B' : '#FFFFFF';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // 3. 徽章内部放置高品质小熊与天气双图标标识
+            ctx.font = '14px sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(seg.icon, centerX, iconY);
+            ctx.fillText('🐻', centerX, iconY);
 
-            // 4. 下方文字标签
-            const weatherText = getWeatherTextByIcon(seg.icon);
-            ctx.font = 'bold 10px "Noto Sans SC", sans-serif';
+            // 4. 下方配合天气状况高亮文本与简符（例如：☀️ 晴朗）
+            const weatherText = `${seg.icon} ${getWeatherTextByIcon(seg.icon)}`;
+            ctx.font = 'bold 10.5px "Noto Sans SC", sans-serif';
 
             if (isDark) {
               ctx.fillStyle = isRain ? '#93C5FD' : (isSun ? '#FDE047' : '#E2E8F0');
             } else {
-              ctx.fillStyle = isRain ? '#2563EB' : (isSun ? '#B45309' : '#64748B');
+              ctx.fillStyle = isRain ? '#1E40AF' : (isSun ? '#78350F' : '#475569');
             }
-            ctx.fillText(weatherText, centerX, iconY + 18);
+            ctx.fillText(weatherText, centerX, iconY + 20);
           });
 
           ctx.restore();
@@ -165,6 +183,8 @@ export function useWeather(showToast) {
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          // 4K HiDPI / Retina 高清渲染支持
+          devicePixelRatio: Math.max(2, window.devicePixelRatio || 1),
           layout: { padding: { top: 15, bottom: 5, left: 10, right: 10 } },
           plugins: {
             legend: { display: false },
