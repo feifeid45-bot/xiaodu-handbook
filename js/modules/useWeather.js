@@ -55,74 +55,79 @@ export function useWeather(showToast) {
     return segments;
   };
 
-  // 纯 Canvas 2D 原生绘制：100% 精确还原工作台左上角黄油小熊图标 (彻底避免 iOS 手机字体遮挡与只显示圆圈的问题)
-  const drawButterBearIcon = (ctx, cx, cy, r) => {
+  // 1:1 绝对精准克隆左上角黄油小熊徽章 (依据 SVG 原理 100x100 几何矢量映射)
+  const drawButterBearIcon = (ctx, centerX, centerY, size = 26) => {
     ctx.save();
     
-    // 1. 棕色耳朵 (外耳 #D97706 与 浅黄内耳 #FEF08A)
-    const earR = r * 0.38;
-    const earOffsetY = r * 0.45;
-    const earOffsetX = r * 0.55;
+    // 基础偏移坐标 (将 100x100 的坐标系映射到 centerX, centerY, 尺寸为 size)
+    const scale = size / 100;
+    const originX = centerX - size / 2;
+    const originY = centerY - size / 2;
 
-    // 左耳
-    ctx.fillStyle = '#D97706';
-    ctx.beginPath();
-    ctx.arc(cx - earOffsetX, cy - earOffsetY, earR, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#FEF08A';
-    ctx.beginPath();
-    ctx.arc(cx - earOffsetX, cy - earOffsetY, earR * 0.55, 0, Math.PI * 2);
-    ctx.fill();
+    const mapX = (x) => originX + x * scale;
+    const mapY = (y) => originY + y * scale;
+    const mapR = (r) => r * scale;
 
-    // 右耳
-    ctx.fillStyle = '#D97706';
-    ctx.beginPath();
-    ctx.arc(cx + earOffsetX, cy - earOffsetY, earR, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#FEF08A';
-    ctx.beginPath();
-    ctx.arc(cx + earOffsetX, cy - earOffsetY, earR * 0.55, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 2. 主头部黄油金背景座 (#FBBF24) 与白色轮廓
+    // 1. 黄油金卡片底座 (#FBBF24)
     ctx.fillStyle = '#FBBF24';
-    ctx.strokeStyle = '#FFFFFF';
-    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.roundRect(originX, originY, size, size, 8 * scale * 3.5);
     ctx.fill();
+
+    // 白边亮光轮廓
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 1.2;
     ctx.stroke();
 
-    // 3. 浅黄脸庞 (#FEF08A)
-    const faceR = r * 0.72;
+    // 2. 左耳朵 (#D97706 与 #FEF08A)
+    ctx.fillStyle = '#D97706';
+    ctx.beginPath();
+    ctx.arc(mapX(26), mapY(26), mapR(14), 0, Math.PI * 2);
+    ctx.fill();
     ctx.fillStyle = '#FEF08A';
     ctx.beginPath();
-    ctx.arc(cx, cy + r * 0.12, faceR, 0, Math.PI * 2);
+    ctx.arc(mapX(26), mapY(26), mapR(7), 0, Math.PI * 2);
     ctx.fill();
 
-    // 4. 深棕眼睛 (#451A03)
+    // 3. 右耳朵 (#D97706 与 #FEF08A)
+    ctx.fillStyle = '#D97706';
+    ctx.beginPath();
+    ctx.arc(mapX(74), mapY(26), mapR(14), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#FEF08A';
+    ctx.beginPath();
+    ctx.arc(mapX(74), mapY(26), mapR(7), 0, Math.PI * 2);
+    ctx.fill();
+
+    // 4. 大圆脸庞 (#FEF08A)
+    ctx.fillStyle = '#FEF08A';
+    ctx.beginPath();
+    ctx.arc(mapX(50), mapY(54), mapR(33), 0, Math.PI * 2);
+    ctx.fill();
+
+    // 5. 眼睛 (#451A03)
     ctx.fillStyle = '#451A03';
     ctx.beginPath();
-    ctx.arc(cx - r * 0.25, cy - r * 0.05, r * 0.11, 0, Math.PI * 2);
-    ctx.arc(cx + r * 0.25, cy - r * 0.05, r * 0.11, 0, Math.PI * 2);
+    ctx.arc(mapX(38), mapY(46), mapR(4.5), 0, Math.PI * 2);
+    ctx.arc(mapX(62), mapY(46), mapR(4.5), 0, Math.PI * 2);
     ctx.fill();
 
-    // 5. 粉嫩腮红 (#F472B6)
-    ctx.fillStyle = 'rgba(244, 114, 182, 0.85)';
-    ctx.beginPath();
-    ctx.arc(cx - r * 0.42, cy + r * 0.15, r * 0.14, 0, Math.PI * 2);
-    ctx.arc(cx + r * 0.42, cy + r * 0.15, r * 0.14, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 6. 浅棕嘴嘴底座 (#F59E0B) 与深棕小鼻子 (#451A03)
+    // 6. 嘴巴基座 (#F59E0B) 与 小鼻头 (#451A03)
     ctx.fillStyle = '#F59E0B';
     ctx.beginPath();
-    ctx.ellipse(cx, cy + r * 0.22, r * 0.22, r * 0.16, 0, 0, Math.PI * 2);
+    ctx.ellipse(mapX(50), mapY(57), mapR(9), mapR(6.5), 0, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = '#451A03';
     ctx.beginPath();
-    ctx.arc(cx, cy + r * 0.15, r * 0.08, 0, Math.PI * 2);
+    ctx.ellipse(mapX(50), mapY(54.5), mapR(4.5), mapR(3), 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 7. 粉嫩腮红 (#F472B6)
+    ctx.fillStyle = 'rgba(244, 114, 182, 0.75)';
+    ctx.beginPath();
+    ctx.arc(mapX(31), mapY(55), mapR(5.5), 0, Math.PI * 2);
+    ctx.arc(mapX(69), mapY(55), mapR(5.5), 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
@@ -141,7 +146,6 @@ export function useWeather(showToast) {
       const temps = hourly24Weather.value.map(h => h.temp);
       const segments = calculateWeatherSegments(hourly24Weather.value);
 
-      // 【黄油小熊 🐻 原生 Canvas 矢量渲染】
       const mojiColorBlockPlugin = {
         id: 'mojiColorBlock',
         beforeDatasetsDraw(chart) {
@@ -180,12 +184,12 @@ export function useWeather(showToast) {
             ctx.fill();
 
             const centerX = (leftX + rightX) / 2;
-            const iconY = bottom - 40;
+            const iconY = bottom - 42;
 
-            // 2. 调用原生 2D Path 精确绘制左上角同款【黄油小熊 🐻 矢量头像徽章】
-            drawButterBearIcon(ctx, centerX, iconY, 13);
+            // 2. 1:1 绝对精准克隆左上角标志性【黄油小熊 🐻 徽章卡片】(尺寸 26px)
+            drawButterBearIcon(ctx, centerX, iconY, 26);
 
-            // 3. 熊熊头像正下方显示清晰的天气天气图标与描述（例如：☀️ 晴朗 / 🌧️ 小雨）
+            // 3. 熊熊正下方显示天气图标与清晰描述 (例如: ☀️ 晴朗 / 🌧️ 小雨)
             const weatherText = `${seg.icon} ${getWeatherTextByIcon(seg.icon)}`;
             ctx.font = 'bold 10.5px "Noto Sans SC", sans-serif';
             ctx.textAlign = 'center';
