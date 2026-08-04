@@ -25,15 +25,7 @@ export function useWeather(showToast) {
   const hourly24Weather = ref([]);
   let hourlyChartInstance = null;
 
-  const forecast7Days = ref([
-    { dateStr: '今天', weekDay: '周二', icon: '☀️', condition: '晴朗', tempMin: 22, tempMax: 29, outfit: '短袖+薄裤' },
-    { dateStr: '08-05', weekDay: '周三', icon: '⛅', condition: '多云', tempMin: 21, tempMax: 28, outfit: '短袖+防晒衫' },
-    { dateStr: '08-06', weekDay: '周四', icon: '🌧️', condition: '小雨', tempMin: 20, tempMax: 25, outfit: '长袖+带伞☂️' },
-    { dateStr: '08-07', weekDay: '周五', icon: '🌦️', condition: '阵雨转晴', tempMin: 19, tempMax: 26, outfit: '薄外套+备伞' },
-    { dateStr: '08-08', weekDay: '周六', icon: '⛅', condition: '多云', tempMin: 22, tempMax: 30, outfit: '清凉短袖' },
-    { dateStr: '08-09', weekDay: '周日', icon: '☀️', condition: '晴朗炎热', tempMin: 24, tempMax: 32, outfit: '防晒裙装/短袖' },
-    { dateStr: '08-10', weekDay: '周一', icon: '🌤️', condition: '晴间多云', tempMin: 23, tempMax: 31, outfit: '透气棉麻T恤' }
-  ]);
+  const forecast7Days = ref([]);
 
   const getWeatherTextByIcon = (icon) => {
     if (icon.includes('☀️')) return '晴朗';
@@ -76,7 +68,6 @@ export function useWeather(showToast) {
       const temps = hourly24Weather.value.map(h => h.temp);
       const segments = calculateWeatherSegments(hourly24Weather.value);
 
-      // 高阶 UI 设计师配色：动态深浅双模式 Canvas 绘图算法
       const mojiColorBlockPlugin = {
         id: 'mojiColorBlock',
         beforeDatasetsDraw(chart) {
@@ -99,7 +90,6 @@ export function useWeather(showToast) {
             const isRain = seg.icon.includes('🌧️') || seg.icon.includes('⛈️') || seg.icon.includes('🌦️');
             const isSun = seg.icon.includes('☀️');
 
-            // 1. 背景色块：深色模式采用沉稳高级调性，浅色模式采用明亮高透调性
             if (isDark) {
               ctx.fillStyle = isRain 
                 ? 'rgba(30, 58, 138, 0.45)' 
@@ -114,7 +104,6 @@ export function useWeather(showToast) {
             ctx.roundRect(leftX + 2, top + 32, width - 4, bottom - top - 52, 14);
             ctx.fill();
 
-            // 2. 气泡底座：深色模式使用清晰闪耀圆框，浅色模式使用高光白描框
             const centerX = (leftX + rightX) / 2;
             const iconY = bottom - 42;
 
@@ -127,13 +116,11 @@ export function useWeather(showToast) {
             ctx.fill();
             ctx.stroke();
 
-            // 3. 高清图标 (20px)
             ctx.font = '20px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(seg.icon, centerX, iconY + 1);
 
-            // 4. 文字颜色：深色模式采用闪耀高亮字，浅色模式采用沉稳字
             const weatherText = getWeatherTextByIcon(seg.icon);
             ctx.font = 'bold 10px "Noto Sans SC", sans-serif';
 
@@ -239,10 +226,26 @@ export function useWeather(showToast) {
         const hourlyTimes = data.hourly.time;
         const hourlyTemps = data.hourly.temperature_2m;
         const hourlyCodes = data.hourly.weathercode;
-        const nowHourStr = new Date().toISOString().substring(0, 13);
 
-        let startIndex = hourlyTimes.findIndex(t => t.startsWith(nowHourStr));
-        if (startIndex === -1) startIndex = 0;
+        // 【QA Bug 核心修复】：使用本地真正的时间 (Local Time) 寻找当前时刻点，废除 UTC 零时区偏差！
+        const now = new Date();
+        const localYear = now.getFullYear();
+        const localMonth = String(now.getMonth() + 1).padStart(2, '0');
+        const localDate = String(now.getDate()).padStart(2, '0');
+        const localHour = String(now.getHours()).padStart(2, '0');
+
+        const localNowPrefix = `${localYear}-${localMonth}-${localDate}T${localHour}:00`;
+
+        let startIndex = hourlyTimes.findIndex(t => t.startsWith(localNowPrefix));
+        if (startIndex === -1) {
+          // 备用兜底逻辑：若正好在整点边缘，取包含当前小时的最接近刻度
+          const targetHourNum = now.getHours();
+          startIndex = hourlyTimes.findIndex(t => {
+            const h = parseInt(t.substring(11, 13));
+            return h === targetHourNum;
+          });
+          if (startIndex === -1) startIndex = 0;
+        }
 
         hourly24Weather.value = hourlyTimes.slice(startIndex, startIndex + 24).map((tStr, i) => {
           const hourNum = parseInt(tStr.substring(11, 13));
@@ -252,7 +255,6 @@ export function useWeather(showToast) {
 
           let timeLabel = `${String(hourNum).padStart(2, '0')}:00`;
           if (i === 0) timeLabel = '现在';
-          if (hourNum === 0) timeLabel = '明天';
 
           return {
             timeStr: timeLabel,
@@ -261,15 +263,18 @@ export function useWeather(showToast) {
           };
         });
 
+        // 7 天预报时间与星期精准本地化转换
         const weekDaysMap = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
         forecast7Days.value = dates.slice(0, 7).map((dStr, idx) => {
-          const dt = new Date(dStr);
+          // 手动解析 YYYY-MM-DD，防范 Safari UTC 时区跨日偏差
+          const parts = dStr.split('-');
+          const dt = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
           const tMax = Math.round(tempsMax[idx]);
           const tMin = Math.round(tempsMin[idx]);
           const code = data.daily.weathercode[idx];
 
           return {
-            dateStr: idx === 0 ? '今天' : dStr.substring(5),
+            dateStr: idx === 0 ? '今天' : `${parts[1]}-${parts[2]}`,
             weekDay: weekDaysMap[dt.getDay()],
             icon: weatherService.getWeatherIconByCode(code),
             condition: code >= 51 ? '阴雨' : (tMax > 28 ? '晴朗' : '多云'),
@@ -280,7 +285,7 @@ export function useWeather(showToast) {
         });
 
         renderHourlyChart();
-        if (showToast) showToast(`${selectedCity.value} 天气走势已同步！`);
+        if (showToast) showToast(`${selectedCity.value} 天气走势已实时更新！`);
       }
     } catch (err) {
       console.warn('天气 API 请求异常:', err);
