@@ -84,7 +84,7 @@ createApp({
         monthlyBudget: expenseModule.monthlyBudget.value,
         targetWeight: weightModule.targetWeight.value
       };
-      storageService.exportJSON(allData, `小杜手册_架构备份_${todayFormatted}.json`);
+      storageService.exportJSON(allData, `小杜小杜_数据备份_${todayFormatted}.json`);
       showToast('数据备份文件已导出成功！');
     };
 
