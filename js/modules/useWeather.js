@@ -68,6 +68,7 @@ export function useWeather(showToast) {
       const temps = hourly24Weather.value.map(h => h.temp);
       const segments = calculateWeatherSegments(hourly24Weather.value);
 
+      // 【精细化 UI 重构】：彻底解决 Canvas Emoji 被小白框裁剪剩 1/4 的问题
       const mojiColorBlockPlugin = {
         id: 'mojiColorBlock',
         beforeDatasetsDraw(chart) {
@@ -90,6 +91,7 @@ export function useWeather(showToast) {
             const isRain = seg.icon.includes('🌧️') || seg.icon.includes('⛈️') || seg.icon.includes('🌦️');
             const isSun = seg.icon.includes('☀️');
 
+            // 1. 半透明天气区段色块
             if (isDark) {
               ctx.fillStyle = isRain 
                 ? 'rgba(30, 58, 138, 0.45)' 
@@ -107,20 +109,24 @@ export function useWeather(showToast) {
             const centerX = (leftX + rightX) / 2;
             const iconY = bottom - 42;
 
-            ctx.fillStyle = isDark ? 'rgba(30, 41, 59, 0.85)' : 'rgba(255, 255, 255, 0.85)';
-            ctx.strokeStyle = isDark ? 'rgba(251, 191, 36, 0.4)' : 'rgba(255, 255, 255, 1)';
-            ctx.lineWidth = 1.5;
+            // 2. 使用宽适的高清半透明胶囊底座，给 Emoji 留足 100% 完整的绘图边界，绝不裁切
+            const pillW = 32;
+            const pillH = 26;
+            const pillX = centerX - pillW / 2;
+            const pillY = iconY - pillH / 2;
 
+            ctx.fillStyle = isDark ? 'rgba(30, 41, 59, 0.85)' : 'rgba(255, 255, 255, 0.9)';
             ctx.beginPath();
-            ctx.arc(centerX, iconY, 14, 0, Math.PI * 2);
+            ctx.roundRect(pillX, pillY, pillW, pillH, 12);
             ctx.fill();
-            ctx.stroke();
 
-            ctx.font = '20px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
+            // 3. 100% 完整渲染的清晰 Emoji 图标
+            ctx.font = '18px "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(seg.icon, centerX, iconY + 1);
+            ctx.fillText(seg.icon, centerX, iconY);
 
+            // 4. 下方文字标签
             const weatherText = getWeatherTextByIcon(seg.icon);
             ctx.font = 'bold 10px "Noto Sans SC", sans-serif';
 
@@ -227,7 +233,6 @@ export function useWeather(showToast) {
         const hourlyTemps = data.hourly.temperature_2m;
         const hourlyCodes = data.hourly.weathercode;
 
-        // 【QA Bug 核心修复】：使用本地真正的时间 (Local Time) 寻找当前时刻点，废除 UTC 零时区偏差！
         const now = new Date();
         const localYear = now.getFullYear();
         const localMonth = String(now.getMonth() + 1).padStart(2, '0');
@@ -238,7 +243,6 @@ export function useWeather(showToast) {
 
         let startIndex = hourlyTimes.findIndex(t => t.startsWith(localNowPrefix));
         if (startIndex === -1) {
-          // 备用兜底逻辑：若正好在整点边缘，取包含当前小时的最接近刻度
           const targetHourNum = now.getHours();
           startIndex = hourlyTimes.findIndex(t => {
             const h = parseInt(t.substring(11, 13));
@@ -263,10 +267,8 @@ export function useWeather(showToast) {
           };
         });
 
-        // 7 天预报时间与星期精准本地化转换
         const weekDaysMap = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
         forecast7Days.value = dates.slice(0, 7).map((dStr, idx) => {
-          // 手动解析 YYYY-MM-DD，防范 Safari UTC 时区跨日偏差
           const parts = dStr.split('-');
           const dt = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
           const tMax = Math.round(tempsMax[idx]);
