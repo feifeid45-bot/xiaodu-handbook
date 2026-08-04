@@ -70,10 +70,13 @@ export function useWeather(showToast) {
 
       if (hourlyChartInstance) hourlyChartInstance.destroy();
 
+      const isDark = document.documentElement.classList.contains('dark');
+
       const labels = hourly24Weather.value.map(h => h.timeStr);
       const temps = hourly24Weather.value.map(h => h.temp);
       const segments = calculateWeatherSegments(hourly24Weather.value);
 
+      // 高阶 UI 设计师配色：动态深浅双模式 Canvas 绘图算法
       const mojiColorBlockPlugin = {
         id: 'mojiColorBlock',
         beforeDatasetsDraw(chart) {
@@ -96,30 +99,49 @@ export function useWeather(showToast) {
             const isRain = seg.icon.includes('🌧️') || seg.icon.includes('⛈️') || seg.icon.includes('🌦️');
             const isSun = seg.icon.includes('☀️');
 
-            ctx.fillStyle = isRain 
-              ? 'rgba(191, 219, 254, 0.45)' 
-              : (isSun ? 'rgba(254, 240, 138, 0.35)' : 'rgba(226, 232, 240, 0.35)');
+            // 1. 背景色块：深色模式采用沉稳高级调性，浅色模式采用明亮高透调性
+            if (isDark) {
+              ctx.fillStyle = isRain 
+                ? 'rgba(30, 58, 138, 0.45)' 
+                : (isSun ? 'rgba(120, 53, 15, 0.45)' : 'rgba(51, 65, 85, 0.5)');
+            } else {
+              ctx.fillStyle = isRain 
+                ? 'rgba(191, 219, 254, 0.45)' 
+                : (isSun ? 'rgba(254, 240, 138, 0.35)' : 'rgba(226, 232, 240, 0.35)');
+            }
 
             ctx.beginPath();
             ctx.roundRect(leftX + 2, top + 32, width - 4, bottom - top - 52, 14);
             ctx.fill();
 
+            // 2. 气泡底座：深色模式使用清晰闪耀圆框，浅色模式使用高光白描框
             const centerX = (leftX + rightX) / 2;
             const iconY = bottom - 42;
 
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+            ctx.fillStyle = isDark ? 'rgba(30, 41, 59, 0.85)' : 'rgba(255, 255, 255, 0.85)';
+            ctx.strokeStyle = isDark ? 'rgba(251, 191, 36, 0.4)' : 'rgba(255, 255, 255, 1)';
+            ctx.lineWidth = 1.5;
+
             ctx.beginPath();
             ctx.arc(centerX, iconY, 14, 0, Math.PI * 2);
             ctx.fill();
+            ctx.stroke();
 
+            // 3. 高清图标 (20px)
             ctx.font = '20px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(seg.icon, centerX, iconY + 1);
 
+            // 4. 文字颜色：深色模式采用闪耀高亮字，浅色模式采用沉稳字
             const weatherText = getWeatherTextByIcon(seg.icon);
             ctx.font = 'bold 10px "Noto Sans SC", sans-serif';
-            ctx.fillStyle = isRain ? '#2563EB' : (isSun ? '#B45309' : '#64748B');
+
+            if (isDark) {
+              ctx.fillStyle = isRain ? '#93C5FD' : (isSun ? '#FDE047' : '#E2E8F0');
+            } else {
+              ctx.fillStyle = isRain ? '#2563EB' : (isSun ? '#B45309' : '#64748B');
+            }
             ctx.fillText(weatherText, centerX, iconY + 18);
           });
 
@@ -134,15 +156,14 @@ export function useWeather(showToast) {
           datasets: [{
             label: '气温 (°C)',
             data: temps,
-            // 按照用户指示：将折线颜色调得更加柔和自然（半透明浅天蓝），线条减细，避免刺眼和僵硬
-            borderColor: 'rgba(96, 165, 250, 0.75)',
+            borderColor: isDark ? 'rgba(147, 197, 253, 0.85)' : 'rgba(96, 165, 250, 0.75)',
             borderWidth: 1.8,
-            backgroundColor: 'rgba(191, 219, 254, 0.12)',
+            backgroundColor: isDark ? 'rgba(30, 58, 138, 0.2)' : 'rgba(191, 219, 254, 0.12)',
             fill: true,
             tension: 0.45,
             pointRadius: 2.5,
             pointHoverRadius: 5,
-            pointBackgroundColor: 'rgba(96, 165, 250, 0.9)',
+            pointBackgroundColor: isDark ? '#60A5FA' : 'rgba(96, 165, 250, 0.9)',
             pointBorderColor: '#FFFFFF',
             pointBorderWidth: 1
           }]
@@ -164,11 +185,11 @@ export function useWeather(showToast) {
           scales: {
             x: {
               grid: { display: false },
-              ticks: { font: { size: 11, weight: '500' }, color: '#94A3B8', maxRotation: 0 }
+              ticks: { font: { size: 11, weight: '500' }, color: isDark ? '#94A3B8' : '#64748B', maxRotation: 0 }
             },
             y: {
-              grid: { color: 'rgba(241, 245, 249, 0.8)' },
-              ticks: { font: { size: 11 }, color: '#94A3B8', callback: (val) => `${val}°` },
+              grid: { color: isDark ? 'rgba(51, 65, 85, 0.4)' : 'rgba(241, 245, 249, 0.8)' },
+              ticks: { font: { size: 11 }, color: isDark ? '#94A3B8' : '#64748B', callback: (val) => `${val}°` },
               suggestedMin: Math.min(...temps) - 4,
               suggestedMax: Math.max(...temps) + 4
             }

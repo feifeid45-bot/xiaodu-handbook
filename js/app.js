@@ -70,6 +70,10 @@ createApp({
       } else {
         document.documentElement.classList.remove('dark');
       }
+      nextTick(() => {
+        if (activeTab.value === 'weather') weatherModule.renderHourlyChart();
+        if (activeTab.value === 'weight') weightModule.renderWeightChart();
+      });
     };
 
     // 本地数据备份与恢复

@@ -229,10 +229,10 @@
 
       <button 
         @click="toggleDarkMode"
-        class="w-full flex items-center gap-3 px-3 py-2 rounded-2xl bg-amber-50 dark:bg-stone-800 hover:bg-amber-100 dark:hover:bg-stone-700 text-amber-900 dark:text-amber-200 text-xs font-medium transition"
+        class="w-full flex items-center gap-3 px-3 py-2 rounded-2xl bg-amber-50 dark:bg-stone-800/80 hover:bg-amber-100 dark:hover:bg-stone-700 text-amber-900 dark:text-amber-200 text-xs font-medium transition"
       >
-        <span class="text-sm w-6 text-center">{{ isDarkMode ? '🌙' : '☀️' }}</span>
-        <span v-if="!sidebarCollapsed || mobileMenuOpen">{{ isDarkMode ? '深色夜间模式' : '淡黄暖阳模式' }}</span>
+        <span class="text-sm w-6 text-center">{{ isDarkMode ? '☀️' : '🌙' }}</span>
+        <span v-if="!sidebarCollapsed || mobileMenuOpen">{{ isDarkMode ? '切换为暖阳模式' : '切换为暗夜模式' }}</span>
       </button>
 
       <div v-if="!sidebarCollapsed || mobileMenuOpen" class="text-center pt-1">
@@ -308,7 +308,7 @@
       <!-- ==================== 模块一：天气预报 & 墨迹风格【色块区段天气+色块内部图标+气温曲线】 ==================== -->
       <section v-if="activeTab === 'weather'" class="space-y-4">
         <!-- 城市选择与今日真实天气大卡片 -->
-        <div class="bg-gradient-to-br from-amber-400 via-amber-300 to-yellow-200 dark:from-amber-600 dark:to-yellow-700 p-4 sm:p-6 rounded-3xl shadow-butter text-amber-950 dark:text-white space-y-4 relative overflow-hidden">
+        <div class="bg-gradient-to-br from-amber-400 via-amber-300 to-yellow-200 dark:from-stone-900 dark:via-stone-850 dark:to-stone-950 p-4 sm:p-6 rounded-3xl shadow-butter text-amber-950 dark:text-amber-100 space-y-4 relative overflow-hidden border border-transparent dark:border-amber-700/30">
           
           <!-- 城市选择与 GPS 定位 -->
           <div class="flex items-center justify-between gap-2">
