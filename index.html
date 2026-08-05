@@ -197,14 +197,15 @@
         <button 
           v-for="item in navItems" 
           :key="item.id"
-          @click="switchTab(item.id)"
-          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all duration-200 text-xs sm:text-sm font-medium bear-btn-pop"
+          @click.prevent="switchTab(item.id)"
+          type="button"
+          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all duration-150 text-xs sm:text-sm font-medium cursor-pointer touch-manipulation active:scale-95 select-none"
           :class="activeTab === item.id 
             ? 'bg-amber-400 text-amber-950 font-bold shadow-md shadow-amber-400/30' 
-            : 'text-stone-600 dark:text-stone-300 hover:bg-amber-100/70 dark:hover:bg-stone-800/80'"
+            : 'text-stone-600 dark:text-stone-300 hover:bg-amber-100/50 dark:hover:bg-stone-800/60'"
         >
-          <span class="text-lg w-6 text-center flex-shrink-0">{{ item.icon }}</span>
-          <span v-if="!sidebarCollapsed || mobileMenuOpen" class="truncate font-bold">{{ item.name }}</span>
+          <span class="text-lg w-6 text-center flex-shrink-0 pointer-events-none">{{ item.icon }}</span>
+          <span v-if="!sidebarCollapsed || mobileMenuOpen" class="truncate font-bold pointer-events-none">{{ item.name }}</span>
         </button>
       </nav>
     </div>
@@ -1290,7 +1291,7 @@
 </div>
 
 <!-- 原生 ES6 模块化主应用入口 (带版本号强行破除浏览器静态缓存) -->
-<script type="module" src="js/app.js?v=10.0"></script>
+<script type="module" src="js/app.js?v=11.0"></script>
 
 </body>
 </html>
