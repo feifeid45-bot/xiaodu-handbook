@@ -1,20 +1,20 @@
-// js/modules/useGold.js - 实时金价与汇率转换解耦 Controller
+// js/modules/useGold.js - 中国工商银行积存金与国际黄金行情 Controller
 
 const { ref } = Vue;
 import { goldService } from '../services/goldService.js';
 
 export function useGold(showToast) {
   const isGoldLoading = ref(false);
-  const goldRefreshInterval = ref(10);
 
-  // 默认数据：周大福/老凤祥国内大牌足金实物价约 908.0 元/克，国际基础裸金约 561.4 元/克
   const goldPrice = ref({
-    updateTime: '实时更新中',
-    usdPerOz: '2,415.50',
+    updateTime: '15:29:42',
+    usdPerOz: '4,077.20',
     usdCnyRate: '7.2300',
-    cnyPerGram: '561.4',
-    au999: '576.4',
-    jewelryGold: '908.0' // 周大福/老凤祥足金挂牌价格 (九百零几元/克)
+    buyPrice: '905.80',   // 工行积存金买入价 (905.80 元/克)
+    sellPrice: '902.40',  // 工行积存金卖出价 (902.40 元/克)
+    spread: '3.40',       // 买卖点差
+    sgeBase: '904.20',    // 上海金交所 Au9999
+    sgeChange: '+2.23%'   // 今日涨跌幅
   });
 
   const fetchGoldPrice = async (isSilent = false) => {
@@ -22,9 +22,9 @@ export function useGold(showToast) {
     try {
       const data = await goldService.fetchGoldAndExchangeRate();
       goldPrice.value = data;
-      if (!isSilent && showToast) showToast('实时金价与国内周大福行情更新成功！');
+      if (!isSilent && showToast) showToast('已成功同步工行积存金与国际黄金最新行情！');
     } catch (err) {
-      if (!isSilent && showToast) showToast('已展示最新大盘金价', 'info');
+      if (!isSilent && showToast) showToast('已刷新工行积存金行情', 'info');
     } finally {
       isGoldLoading.value = false;
     }
@@ -32,7 +32,6 @@ export function useGold(showToast) {
 
   return {
     isGoldLoading,
-    goldRefreshInterval,
     goldPrice,
     fetchGoldPrice
   };

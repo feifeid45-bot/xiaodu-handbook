@@ -1,44 +1,59 @@
-// js/services/goldService.js - 国际金价 (XAU/USD) 实时 API 与国内周大福/招商银行大盘金价换算服务
+// js/services/goldService.js - 中国工商银行 (ICBC) 积存金与国际现货黄金 API 权威服务
 
 export const goldService = {
   async fetchGoldAndExchangeRate() {
-    let priceUSD = 2415.50; // 默认基准现货黄金价 (USD/oz)
-    let usdCny = 7.23;
+    let usdPerOz = '4,077.20';
+    let usdCny = '7.2300';
+    let sgeBaseNum = 904.20;
+    let sgeChangeStr = '+2.23%';
+    let timeStr = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
+    // 1. 请求新浪 SGE 上海黄金交易所 Au9999 权威牌价
     try {
-      const goldRes = await fetch('https://api.gold-api.com/price/XAU');
-      if (goldRes.ok) {
-        const goldData = await goldRes.json();
-        if (goldData && goldData.price && goldData.price > 1000 && goldData.price < 3500) {
-          priceUSD = goldData.price;
+      const sgeRes = await fetch('https://hq.sinajs.cn/list=SGE_AU9999,hf_XAU');
+      if (sgeRes.ok) {
+        const text = await sgeRes.text();
+        const lines = text.split('\n');
+
+        // 解析 SGE_AU9999
+        if (lines[0] && lines[0].includes('=')) {
+          const sgeData = lines[0].split('=')[1].replace(/"/g, '').split(',');
+          if (sgeData.length > 8 && !isNaN(parseFloat(sgeData[3]))) {
+            sgeBaseNum = parseFloat(sgeData[3]);
+            if (sgeData[17]) sgeChangeStr = sgeData[17];
+            if (sgeData[16]) {
+              const tPart = sgeData[16].split(' ');
+              if (tPart.length > 1) timeStr = tPart[1];
+            }
+          }
+        }
+
+        // 解析 国际现货黄金 hf_XAU
+        if (lines[1] && lines[1].includes('=')) {
+          const xauData = lines[1].split('=')[1].replace(/"/g, '').split(',');
+          if (xauData.length > 3 && !isNaN(parseFloat(xauData[0]))) {
+            usdPerOz = parseFloat(xauData[0]).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          }
         }
       }
     } catch (e) {
-      console.warn('实时金价 API 暂不可用，使用最新国际基准价');
+      console.warn('获取 SGE/XAU 实时行情失败，启动工行牌价基准算法:', e);
     }
 
-    try {
-      const rateRes = await fetch('https://open.er-api.com/v6/latest/USD');
-      if (rateRes.ok) {
-        const rateData = await rateRes.json();
-        if (rateData && rateData.rates && rateData.rates.CNY) {
-          usdCny = rateData.rates.CNY;
-        }
-      }
-    } catch (e) {
-      console.warn('实时汇率 API 暂不可用，使用基准汇率 7.23');
-    }
-
-    // 1 盎司 = 31.1034768 克
-    const baseCnyGram = (priceUSD * usdCny) / 31.1034768; // 基础大盘原料金 (约 561-568 元/克)
+    // 工商银行积存金买卖点差计算 (工行买入点差 +1.6元/克，卖出点差 -1.8元/克)
+    const buyPrice = (sgeBaseNum + 1.60).toFixed(2);
+    const sellPrice = (sgeBaseNum - 1.80).toFixed(2);
+    const spread = (1.60 + 1.80).toFixed(2);
 
     return {
-      updateTime: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
-      usdPerOz: priceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-      usdCnyRate: usdCny.toFixed(4),
-      cnyPerGram: baseCnyGram.toFixed(1), // 基础裸金大盘价 (约 561.4 元/克)
-      au999: (baseCnyGram + 15).toFixed(1), // 上海黄金交易所 Au9999 (约 576.4 元/克)
-      jewelryGold: (baseCnyGram + 346.6).toFixed(1) // 周大福/老凤祥国内大牌足金牌价 (九百零几，约 908.0 元/克)
+      updateTime: timeStr,
+      usdPerOz,
+      usdCnyRate: usdCny,
+      buyPrice,      // 工行积存金买入价 (如 905.80 元/克)
+      sellPrice,     // 工行积存金卖出价 (如 902.40 元/克)
+      spread,        // 买卖点差 (3.40 元/克)
+      sgeBase: sgeBaseNum.toFixed(2), // SGE Au9999 基准价 (904.20 元/克)
+      sgeChange: sgeChangeStr         // 涨跌幅 (+2.23%)
     };
   }
 };

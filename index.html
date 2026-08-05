@@ -1034,45 +1034,64 @@
         </div>
       </section>
 
-      <!-- ==================== 模块六：实时金价 (周大福大牌足金900+与国际现货API) ==================== -->
+      <!-- ==================== 模块六：实时金价 (工行积存金与国际黄金行情控制台) ==================== -->
       <section v-if="activeTab === 'gold'" class="space-y-3.5">
-        <div class="flex items-center justify-between bg-white dark:bg-stone-800 p-3 rounded-2xl border border-amber-100 dark:border-stone-700 shadow-butter text-xs">
-          <span class="font-bold text-stone-800 dark:text-stone-200">🪙 真实国际金价 API (XAU/USD) & 周大福大牌行情</span>
+        <div class="flex items-center justify-between bg-white dark:bg-stone-800 p-3.5 rounded-3xl border border-amber-100 dark:border-stone-700 shadow-butter text-xs">
           <div class="flex items-center gap-2">
-            <span class="text-[10px] text-stone-400">{{ goldPrice.updateTime }}</span>
-            <button 
-              @click="fetchGoldPrice" 
-              class="px-2 py-0.5 rounded-xl bg-amber-400 text-amber-950 font-bold text-[11px] cursor-pointer"
-            >
-              🔄 刷新行情
-            </button>
+            <span class="text-base">🪙</span>
+            <div>
+              <h3 class="font-bold text-stone-900 dark:text-amber-100 text-xs sm:text-sm">黄金行情控制台 (工行积存金 & 国际大盘)</h3>
+              <p class="text-[10px] text-stone-400">官方牌价更新时间：{{ goldPrice.updateTime }}</p>
+            </div>
           </div>
+          
+          <button 
+            @click="fetchGoldPrice()" 
+            class="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-bold text-xs shadow-xs transition cursor-pointer flex items-center gap-1"
+          >
+            🔄 刷新行情
+          </button>
         </div>
 
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <!-- 醒目卡片 1：周大福/老凤祥国内大牌足金 (九百零几元/克) -->
-          <div class="bg-gradient-to-br from-amber-400 to-yellow-300 text-amber-950 p-3.5 rounded-3xl shadow-butter space-y-1">
-            <p class="text-[10px] font-bold opacity-80">💎 周大福/老凤祥足金</p>
-            <p class="text-xl font-bold font-mono">¥ {{ goldPrice.jewelryGold }}</p>
-            <p class="text-[10px] opacity-90">国内大牌挂牌价 (元/克)</p>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <!-- 1. 【首位放置】：国际现货黄金 (XAU/USD 美元/盎司) -->
+          <div class="bg-gradient-to-br from-amber-400 via-yellow-300 to-amber-200 dark:from-stone-900 dark:via-stone-850 dark:to-stone-950 text-amber-950 dark:text-amber-100 p-4 rounded-3xl shadow-butter space-y-1.5 border border-transparent dark:border-amber-700/30">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-extrabold opacity-80 uppercase tracking-wider">🌐 国际现货黄金 (XAU)</span>
+              <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-white/60 dark:bg-stone-800 font-bold text-amber-900 dark:text-amber-200">USD/oz</span>
+            </div>
+            <p class="text-2xl sm:text-3xl font-extrabold font-mono text-amber-950 dark:text-amber-50">${{ goldPrice.usdPerOz }}</p>
+            <p class="text-[10px] opacity-90 font-medium">汇率参考: {{ goldPrice.usdCnyRate }} CNY/USD</p>
           </div>
 
-          <div class="bg-white dark:bg-stone-800 p-3.5 rounded-3xl border border-amber-100 dark:border-stone-700 shadow-butter space-y-1">
-            <p class="text-[10px] font-bold text-stone-500">国际现货黄金 (XAU)</p>
-            <p class="text-xl font-bold font-mono text-amber-950 dark:text-amber-100">${{ goldPrice.usdPerOz }}</p>
-            <p class="text-[10px] text-stone-400">美元/盎司 (汇率 {{ goldPrice.usdCnyRate }})</p>
+          <!-- 2. 工行积存金 买入价 (元/克) -->
+          <div class="bg-white dark:bg-stone-800 p-4 rounded-3xl border border-amber-100 dark:border-stone-700 shadow-butter space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold text-rose-600 dark:text-rose-400">🔴 工行积存金 买入价</span>
+              <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-300 font-bold">买入</span>
+            </div>
+            <p class="text-2xl sm:text-3xl font-extrabold font-mono text-stone-900 dark:text-amber-100">¥ {{ goldPrice.buyPrice }}</p>
+            <p class="text-[10px] text-stone-400 font-medium">元/克 (适合主动积存建仓)</p>
           </div>
 
-          <div class="bg-white dark:bg-stone-800 p-3.5 rounded-3xl border border-amber-100 dark:border-stone-700 shadow-butter space-y-1">
-            <p class="text-[10px] font-bold text-stone-500">国际金价折合人民币</p>
-            <p class="text-xl font-bold font-mono text-amber-950 dark:text-amber-100">¥ {{ goldPrice.cnyPerGram }}</p>
-            <p class="text-[10px] text-stone-400">基础裸金 (元/克)</p>
+          <!-- 3. 工行积存金 卖出价 (元/克) -->
+          <div class="bg-white dark:bg-stone-800 p-4 rounded-3xl border border-amber-100 dark:border-stone-700 shadow-butter space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">🟢 工行积存金 卖出价</span>
+              <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-300 font-bold">卖出</span>
+            </div>
+            <p class="text-2xl sm:text-3xl font-extrabold font-mono text-stone-900 dark:text-amber-100">¥ {{ goldPrice.sellPrice }}</p>
+            <p class="text-[10px] text-stone-400 font-medium">元/克 (买卖点差: ¥{{ goldPrice.spread }})</p>
           </div>
 
-          <div class="bg-white dark:bg-stone-800 p-3.5 rounded-3xl border border-amber-100 dark:border-stone-700 shadow-butter space-y-1">
-            <p class="text-[10px] font-bold text-stone-500">上海金交所 Au9999</p>
-            <p class="text-xl font-bold font-mono text-amber-950 dark:text-amber-100">¥ {{ goldPrice.au999 }}</p>
-            <p class="text-[10px] text-red-500">交易所原料金 (元/克)</p>
+          <!-- 4. 上海金交所 Au9999 (元/克) -->
+          <div class="bg-white dark:bg-stone-800 p-4 rounded-3xl border border-amber-100 dark:border-stone-700 shadow-butter space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold text-stone-600 dark:text-stone-300">🏢 上海金交所 Au9999</span>
+              <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-stone-700 text-amber-900 dark:text-amber-200 font-bold">{{ goldPrice.sgeChange }}</span>
+            </div>
+            <p class="text-2xl sm:text-3xl font-extrabold font-mono text-amber-950 dark:text-amber-100">¥ {{ goldPrice.sgeBase }}</p>
+            <p class="text-[10px] text-stone-400 font-medium">元/克 (中国境内现货大盘)</p>
           </div>
         </div>
       </section>
@@ -1292,7 +1311,7 @@
 </div>
 
 <!-- 原生 ES6 模块化主应用入口 (带版本号强行破除浏览器静态缓存) -->
-<script type="module" src="js/app.js?v=14.0"></script>
+<script type="module" src="js/app.js?v=15.0"></script>
 
 </body>
 </html>
