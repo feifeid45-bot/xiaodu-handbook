@@ -76,6 +76,7 @@
   </script>
 
   <style type="text/css">
+    [v-cloak] { display: none !important; }
     html, body {
       height: 100%;
       overflow: hidden;
@@ -150,32 +151,39 @@
   
   <!-- ==================== 抽屉式/缩进侧边栏 ==================== -->
   <div 
-    v-if="mobileMenuOpen" 
-    @click="mobileMenuOpen = false"
-    class="md:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity"
-  ></div>
 
+<body class="h-full bg-[#FFFDF5] dark:bg-stone-900 text-stone-800 dark:text-stone-100 transition-colors duration-200" style="background-color: #FFFDF5;">
+
+<!-- Native Loading UI -->
+<div id="native-loading">
+  <div class="animate-bounce text-4xl">🐻</div>
+</div>
+
+<!-- Vue 响应式应用容器 -->
+<div id="app" class="flex h-screen overflow-hidden bg-[#FFFDF5] dark:bg-stone-900" style="background-color: #FFFDF5;" v-cloak>
+  
+  <!-- ==================== 侧边栏导航栏 (Desktop & Mobile Drawer) ==================== -->
   <aside 
-    class="fixed md:static top-0 left-0 h-screen z-50 md:z-30 flex flex-col justify-between border-r border-bear-border dark:border-bear-darkBorder bg-white/95 dark:bg-stone-900/95 backdrop-blur-md transition-all duration-300 shadow-butter flex-shrink-0"
+    class="fixed inset-y-0 left-0 z-40 w-64 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-r border-amber-100 dark:border-stone-800 flex flex-col transition-all duration-300 transform md:relative md:translate-x-0"
     :class="[
-      sidebarCollapsed ? 'w-20 px-2' : 'w-60 px-4',
-      mobileMenuOpen ? 'translate-x-0 w-60 px-4' : '-translate-x-full md:translate-x-0'
+      mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+      sidebarCollapsed ? 'md:w-20' : 'md:w-64'
     ]"
   >
-    <div class="flex-1 flex flex-col min-h-0 overflow-y-auto no-scrollbar">
-      <div class="flex items-center justify-between py-4 px-2 border-b border-amber-100 dark:border-stone-800 flex-shrink-0">
-        <div class="flex items-center gap-2.5 overflow-hidden">
-          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-400 to-yellow-200 flex items-center justify-center text-xl shadow-md bear-badge flex-shrink-0 border-2 border-white">
-            🐻
-          </div>
-          <div v-if="!sidebarCollapsed || mobileMenuOpen" class="whitespace-nowrap">
-            <h1 class="font-bold text-base text-amber-900 dark:text-amber-300 font-fredoka flex items-center gap-1.5">
-              小杜小杜
-              <span class="text-[10px] bg-amber-400 text-amber-950 px-1.5 py-0.5 rounded-full font-bold shadow-xs">v1.0</span>
-            </h1>
-            <p class="text-[11px] text-amber-600/80 dark:text-amber-400/70">黄油小熊工作台</p>
-          </div>
+    <!-- 侧边栏头部区 -->
+    <div class="p-4 flex items-center justify-between border-b border-amber-100 dark:border-stone-800 flex-shrink-0">
+      <div class="flex items-center gap-3 overflow-hidden">
+        <div class="w-10 h-10 rounded-2xl bg-amber-400 flex items-center justify-center text-xl font-bold shadow-butter text-amber-950 flex-shrink-0 animate-pulse">
+          🐻
         </div>
+        <div v-if="!sidebarCollapsed || mobileMenuOpen" class="whitespace-nowrap">
+          <h1 class="font-bold text-base text-amber-900 dark:text-amber-300 font-fredoka flex items-center gap-1.5">
+            小杜小杜
+            <span class="text-[10px] bg-amber-400 text-amber-950 px-1.5 py-0.5 rounded-full font-bold shadow-xs">v1.0</span>
+          </h1>
+          <p class="text-[11px] text-amber-600/80 dark:text-amber-400/70">黄油小熊工作台</p>
+        </div>
+      </div>
 
         <button 
           @click="toggleSidebar"
@@ -1350,7 +1358,7 @@
 </div>
 
 <!-- 原生 ES6 模块化主应用入口 (带版本号强行破除浏览器静态缓存) -->
-<script type="module" src="js/app.js?v=16.0"></script>
+<script type="module" src="js/app.js?v=17.0"></script>
 
 </body>
 </html>

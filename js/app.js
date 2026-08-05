@@ -27,13 +27,13 @@ createApp({
     const navItems = NAV_ITEMS;
     const currentNav = computed(() => navItems.find(i => i.id === activeTab.value) || navItems[0]);
 
-    //  Toast 消息组件 (包含首屏 3 秒静默锁，彻底消除开屏打卡弹窗)
+    //  Toast 消息组件 (包含首屏 5 秒强力静默锁，彻底消除开屏弹窗闪现)
     const isBooting = ref(true);
-    setTimeout(() => { isBooting.value = false; }, 3000);
+    setTimeout(() => { isBooting.value = false; }, 5000);
 
     const toast = ref({ show: false, msg: '', type: 'info' });
     const showToast = (msg, type = 'info') => {
-      if (isBooting.value) return; // 开屏静默拦截，绝对零弹窗
+      if (isBooting.value) return; // 开屏静默强力拦截，绝对零弹窗
       toast.value = { show: true, msg, type };
       setTimeout(() => { toast.value.show = false; }, 2500);
     };
@@ -49,7 +49,7 @@ createApp({
     setInterval(updateClock, 1000);
     updateClock();
 
-    // 挂载 7 大子模块 Controller
+    // 挂载 7 大子模块 Controller (全部传入静默初始化)
     const weatherModule = useWeather(showToast);
     const todoModule = useTodo(todayFormatted, showToast);
     const habitModule = useHabit(todayFormatted, showToast);
