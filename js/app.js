@@ -151,8 +151,8 @@ createApp({
     });
 
     onMounted(() => {
-      weatherModule.fetchWeatherData();
-      goldModule.fetchGoldPrice();
+      weatherModule.fetchWeatherData(null, null, null, true);
+      goldModule.fetchGoldPrices(true);
       if (activeTab.value === 'weight') weightModule.renderWeightChart();
     });
 

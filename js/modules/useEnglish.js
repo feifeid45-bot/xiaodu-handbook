@@ -1,12 +1,33 @@
-// js/modules/useEnglish.js - 英语学习解耦 Controller (支持基于当天的日期算法自动轮换每日 10 词)
+// js/modules/useEnglish.js - 英语学习 2.0 (支持 2000+ 词库、已学习标记、已记住自动过滤屏蔽与复习本)
 
-const { ref, computed } = Vue;
-import { EXTENDED_WORD_BANK } from '../config.js';
+const { ref, computed, watch } = Vue;
+import { ENGLISH_WORD_BANK_2000 } from '../data/englishWordBank.js';
 import { speechService } from '../services/speechService.js';
+import { storageService } from '../services/storageService.js';
+
+const STORAGE_KEYS = {
+  LEARNED: 'xiaodu_english_learned_v1',
+  MASTERED: 'xiaodu_english_mastered_v1'
+};
 
 export function useEnglish(showToast) {
-  // 基于当天真实日期 (YYYY-MM-DD) 计算每日专属 10 个单词的伪随机算法
+  // 1. 已学习与已记住单词集合存储
+  const learnedWords = ref(storageService.get(STORAGE_KEYS.LEARNED, []));
+  const masteredWords = ref(storageService.get(STORAGE_KEYS.MASTERED, []));
+
+  watch(learnedWords, (val) => storageService.set(STORAGE_KEYS.LEARNED, val), { deep: true });
+  watch(masteredWords, (val) => storageService.set(STORAGE_KEYS.MASTERED, val), { deep: true });
+
+  // 2. 基于日期与斩词过滤的 10 词推荐算法
   const getDaily10Words = () => {
+    const masteredSet = new Set(masteredWords.value);
+    // 过滤掉所有已记住的单词
+    const availablePool = ENGLISH_WORD_BANK_2000.filter(item => !masteredSet.has(item.word));
+
+    if (availablePool.length === 0) {
+      return ENGLISH_WORD_BANK_2000.slice(0, 10);
+    }
+
     const todayStr = new Date().toISOString().substring(0, 10);
     let hash = 0;
     for (let i = 0; i < todayStr.length; i++) {
@@ -15,21 +36,70 @@ export function useEnglish(showToast) {
     }
     const seed = Math.abs(hash);
 
-    const totalBank = EXTENDED_WORD_BANK.length;
-    const startIndex = seed % totalBank;
+    const totalPool = availablePool.length;
+    const startIndex = seed % totalPool;
 
     const dailyWords = [];
-    for (let i = 0; i < 10; i++) {
-      const idx = (startIndex + i * 3) % totalBank;
-      dailyWords.push(EXTENDED_WORD_BANK[idx]);
+    for (let i = 0; i < Math.min(10, totalPool); i++) {
+      const idx = (startIndex + i * 3) % totalPool;
+      dailyWords.push(availablePool[idx]);
     }
     return dailyWords;
   };
 
   const dailyWords = ref(getDaily10Words());
   const selectedWordIndex = ref(0);
+  const activeTabSub = ref('study'); // 'study' 背词 | 'mastered' 已斩词库
+  const isMeaningRevealed = ref(true); // 听音隐义/卡片背词开关
 
   const currentWord = computed(() => dailyWords.value[selectedWordIndex.value] || dailyWords.value[0]);
+
+  // 判断状态
+  const isCurrentLearned = computed(() => {
+    if (!currentWord.value) return false;
+    return learnedWords.value.includes(currentWord.value.word);
+  });
+
+  const isCurrentMastered = computed(() => {
+    if (!currentWord.value) return false;
+    return masteredWords.value.includes(currentWord.value.word);
+  });
+
+  // 3. 标记为【已学习】
+  const toggleLearned = (wordStr = null) => {
+    const targetWord = wordStr || (currentWord.value ? currentWord.value.word : null);
+    if (!targetWord) return;
+
+    const idx = learnedWords.value.indexOf(targetWord);
+    if (idx > -1) {
+      learnedWords.value.splice(idx, 1);
+      if (showToast) showToast(`已取消打卡 [${targetWord}]`);
+    } else {
+      learnedWords.value.push(targetWord);
+      if (showToast) showToast(`📖 标记 [${targetWord}] 为今日已学习！`);
+    }
+  };
+
+  // 4. 标记为【已记住】(斩词，以后不再推荐)
+  const toggleMastered = (wordStr = null) => {
+    const targetWord = wordStr || (currentWord.value ? currentWord.value.word : null);
+    if (!targetWord) return;
+
+    const idx = masteredWords.value.indexOf(targetWord);
+    if (idx > -1) {
+      masteredWords.value.splice(idx, 1);
+      if (showToast) showToast(`已将 [${targetWord}] 移出斩词本，恢复推荐`);
+    } else {
+      masteredWords.value.push(targetWord);
+      // 同时自动记为已学习
+      if (!learnedWords.value.includes(targetWord)) learnedWords.value.push(targetWord);
+      if (showToast) showToast(`✨ 已将 [${targetWord}] 收入斩词本！以后轮询不再出现`);
+      
+      // 刷新推荐池
+      dailyWords.value = getDaily10Words();
+      if (selectedWordIndex.value >= dailyWords.value.length) selectedWordIndex.value = 0;
+    }
+  };
 
   const prevWord = () => {
     if (selectedWordIndex.value > 0) {
@@ -37,6 +107,7 @@ export function useEnglish(showToast) {
     } else {
       selectedWordIndex.value = dailyWords.value.length - 1;
     }
+    isMeaningRevealed.value = true;
   };
 
   const nextWord = () => {
@@ -45,23 +116,40 @@ export function useEnglish(showToast) {
     } else {
       selectedWordIndex.value = 0;
     }
+    isMeaningRevealed.value = true;
   };
 
   const playAudio = (type = 'us') => {
+    if (!currentWord.value) return;
     const word = currentWord.value.word;
     speechService.playWord(word, type);
     if (showToast) {
       const typeName = type === 'us' ? '美音' : '英音';
-      showToast(`📢 正在朗读 [${word}] (${typeName})`);
+      showToast(`📢 [${word}] (${typeName})`);
     }
   };
+
+  const masteredWordDetails = computed(() => {
+    const masteredSet = new Set(masteredWords.value);
+    return ENGLISH_WORD_BANK_2000.filter(item => masteredSet.has(item.word));
+  });
 
   return {
     dailyWords,
     selectedWordIndex,
     currentWord,
+    activeTabSub,
+    isMeaningRevealed,
+    learnedWords,
+    masteredWords,
+    masteredWordDetails,
+    isCurrentLearned,
+    isCurrentMastered,
+    toggleLearned,
+    toggleMastered,
     prevWord,
     nextWord,
-    playAudio
+    playAudio,
+    totalBankCount: ENGLISH_WORD_BANK_2000.length
   };
 }
