@@ -150,9 +150,10 @@
 <!-- Vue 响应式应用容器 -->
 <div id="app" class="flex h-screen overflow-hidden bg-[#FFFDF5] dark:bg-stone-900" style="background-color: #FFFDF5;">
   
-  <!-- 移动端侧边栏蒙层 -->
+  <!-- 移动端侧边栏蒙层 (带 v-cloak 绝对防开屏黑影弹窗闪现) -->
   <div 
     v-if="mobileMenuOpen" 
+    v-cloak
     @click="mobileMenuOpen = false"
     class="md:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity"
   ></div>
@@ -298,9 +299,10 @@
     <!-- 主主体内容容器 -->
     <div class="p-3 sm:p-5 md:p-6 max-w-7xl w-full mx-auto space-y-4 flex-1">
 
-      <!-- Toast 通知浮窗 -->
+      <!-- Toast 通知浮窗 (加装 v-cloak 绝对防闪现) -->
       <div 
         v-if="toast.show" 
+        v-cloak
         class="fixed top-14 right-4 z-50 px-4 py-2.5 rounded-2xl shadow-butter-lg flex items-center gap-2 text-xs font-bold transition-all duration-300 transform border"
         :class="toast.type === 'success' ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-red-100 text-red-900 border-red-300'"
       >
@@ -1352,7 +1354,7 @@
 </div>
 
 <!-- 原生 ES6 模块化主应用入口 (带版本号强行破除浏览器静态缓存) -->
-<script type="module" src="js/app.js?v=20.0"></script>
+<script type="module" src="js/app.js?v=21.0"></script>
 
 </body>
 </html>
