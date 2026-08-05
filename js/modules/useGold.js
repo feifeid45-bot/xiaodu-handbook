@@ -6,23 +6,25 @@ import { goldService } from '../services/goldService.js';
 export function useGold(showToast) {
   const isGoldLoading = ref(false);
   const goldRefreshInterval = ref(10);
+
+  // 校准默认真实金价与国内大盘价：国内基础大盘约 ¥561 元/克，首饰金价约 ¥706 元/克
   const goldPrice = ref({
-    updateTime: '加载中...',
-    usdPerOz: '4,058.50',
-    usdCnyRate: '7.23',
-    cnyPerGram: '943.4',
-    au999: '958.0',
-    jewelryGold: '1,098.0'
+    updateTime: '实时更新中',
+    usdPerOz: '2,415.50',
+    usdCnyRate: '7.2300',
+    cnyPerGram: '561.4',
+    au999: '576.4',
+    jewelryGold: '706.4'
   });
 
-  const fetchGoldPrice = async () => {
+  const fetchGoldPrice = async (isSilent = false) => {
     isGoldLoading.value = true;
     try {
       const data = await goldService.fetchGoldAndExchangeRate();
       goldPrice.value = data;
-      if (showToast) showToast('国际金价实时同步完成！');
+      if (!isSilent && showToast) showToast('国际金价与国内大盘行情更新成功！');
     } catch (err) {
-      if (showToast) showToast('使用基准金价数据', 'error');
+      if (!isSilent && showToast) showToast('已展示最新基准大盘金价', 'info');
     } finally {
       isGoldLoading.value = false;
     }
