@@ -855,77 +855,77 @@
             <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">自动过滤已记住单词，每日精选轮换 🐻✨</p>
           </div>
 
-          <!-- 子 Tab 切换 (使用 switchSubTab 确保 100% 触发视图响应) -->
+          <!-- 子 Tab 切换 (直接绑定顶层响应式变量 activeTabSub) -->
           <div class="flex items-center bg-amber-50 dark:bg-stone-700 p-0.5 rounded-2xl border border-amber-200/60 dark:border-stone-600">
             <button 
-              @click="english.switchSubTab('study')" 
-              :class="['px-3 py-1 rounded-xl text-[11px] font-bold transition cursor-pointer', english.activeTabSub === 'study' ? 'bg-amber-400 text-amber-950 shadow-xs' : 'text-stone-500 dark:text-stone-300']"
+              @click="switchSubTab('study')" 
+              :class="['px-3 py-1 rounded-xl text-[11px] font-bold transition cursor-pointer', activeTabSub === 'study' ? 'bg-amber-400 text-amber-950 shadow-xs' : 'text-stone-500 dark:text-stone-300']"
             >
-              📖 每日推荐 ({{ english.dailyWords.length }})
+              📖 每日推荐 ({{ dailyWords.length }})
             </button>
             <button 
-              @click="english.activeTabSub = 'mastered'" 
-              :class="['px-3 py-1 rounded-xl text-[11px] font-bold transition', english.activeTabSub === 'mastered' ? 'bg-amber-400 text-amber-950 shadow-xs' : 'text-stone-500 dark:text-stone-300']"
+              @click="switchSubTab('mastered')" 
+              :class="['px-3 py-1 rounded-xl text-[11px] font-bold transition cursor-pointer', activeTabSub === 'mastered' ? 'bg-amber-400 text-amber-950 shadow-xs' : 'text-stone-500 dark:text-stone-300']"
             >
-              ✨ 已斩词本 ({{ english.masteredWords.length }})
+              ✨ 已斩词本 ({{ masteredWords.length }})
             </button>
           </div>
         </div>
 
         <!-- 1. 背词模式区 -->
-        <div v-if="english.activeTabSub === 'study'" class="space-y-3.5">
+        <div v-if="activeTabSub === 'study'" class="space-y-3.5">
           <!-- 主卡片 -->
           <div class="bg-gradient-to-br from-amber-400 via-yellow-300 to-amber-200 dark:from-stone-900 dark:via-stone-850 dark:to-stone-950 p-5 sm:p-6 rounded-3xl shadow-butter text-amber-950 dark:text-amber-100 space-y-4 relative overflow-hidden border border-transparent dark:border-amber-700/30 text-center">
             
             <div class="flex items-center justify-between text-xs font-semibold">
               <span class="px-2.5 py-0.5 rounded-full bg-white/70 dark:bg-stone-800 text-amber-900 dark:text-amber-200 text-[10px] font-bold">
-                🏷️ {{ english.currentWord.category || '核心实用' }}
+                🏷️ {{ currentWord ? currentWord.category : '核心实用' }}
               </span>
               <div class="flex items-center gap-1.5">
-                <span v-if="english.isCurrentLearned" class="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold">✓ 已学习</span>
-                <span v-if="english.isCurrentMastered" class="px-2 py-0.5 rounded-full bg-purple-600 text-white text-[10px] font-bold">✨ 已斩词</span>
-                <span class="text-[11px] font-bold text-amber-900/80 dark:text-amber-300/80">第 {{ english.selectedWordIndex + 1 }} / {{ english.dailyWords.length }} 词</span>
+                <span v-if="isCurrentLearned" class="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold">✓ 已学习</span>
+                <span v-if="isCurrentMastered" class="px-2 py-0.5 rounded-full bg-purple-600 text-white text-[10px] font-bold">✨ 已斩词</span>
+                <span class="text-[11px] font-bold text-amber-900/80 dark:text-amber-300/80">第 {{ selectedWordIndex + 1 }} / {{ dailyWords.length }} 词</span>
               </div>
             </div>
 
-            <div class="py-2 space-y-1">
+            <div class="py-2 space-y-1" v-if="currentWord">
               <h4 class="text-3xl sm:text-4xl font-extrabold tracking-wide font-mono text-amber-950 dark:text-amber-50">
-                {{ english.currentWord.word }}
+                {{ currentWord.word }}
               </h4>
               <p class="text-xs font-medium text-amber-900/80 dark:text-amber-300/80 font-mono">
-                / {{ english.currentWord.phonetic }} /
+                / {{ currentWord.phonetic }} /
               </p>
               
               <div class="flex justify-center items-center gap-2 pt-2">
                 <button 
-                  @click="english.playAudio('us')" 
-                  class="px-3 py-1 rounded-xl bg-white/80 dark:bg-stone-800 hover:bg-white text-amber-950 dark:text-amber-100 text-xs font-bold transition shadow-xs flex items-center gap-1"
+                  @click="playAudio('us')" 
+                  class="px-3 py-1 rounded-xl bg-white/80 dark:bg-stone-800 hover:bg-white text-amber-950 dark:text-amber-100 text-xs font-bold transition shadow-xs flex items-center gap-1 cursor-pointer"
                 >
                   🔊 美音
                 </button>
                 <button 
-                  @click="english.playAudio('uk')" 
-                  class="px-3 py-1 rounded-xl bg-white/80 dark:bg-stone-800 hover:bg-white text-amber-950 dark:text-amber-100 text-xs font-bold transition shadow-xs flex items-center gap-1"
+                  @click="playAudio('uk')" 
+                  class="px-3 py-1 rounded-xl bg-white/80 dark:bg-stone-800 hover:bg-white text-amber-950 dark:text-amber-100 text-xs font-bold transition shadow-xs flex items-center gap-1 cursor-pointer"
                 >
                   🇬🇧 英音
                 </button>
               </div>
             </div>
 
-            <div class="bg-white/80 dark:bg-stone-900/90 backdrop-blur-md p-4 rounded-2xl text-left space-y-1.5 border border-white/50 dark:border-stone-800">
+            <div v-if="currentWord" class="bg-white/80 dark:bg-stone-900/90 backdrop-blur-md p-4 rounded-2xl text-left space-y-1.5 border border-white/50 dark:border-stone-800">
               <div class="flex items-center justify-between text-[11px]">
                 <span class="font-bold text-amber-900/60 dark:text-amber-400/60 uppercase">中文释义与例句</span>
-                <button @click="english.isMeaningRevealed = !english.isMeaningRevealed" class="text-amber-800 dark:text-amber-400 font-bold hover:underline">
-                  {{ english.isMeaningRevealed ? '🙈 隐去释义背词' : '👁️ 显示释义' }}
+                <button @click="isMeaningRevealed = !isMeaningRevealed" class="text-amber-800 dark:text-amber-400 font-bold hover:underline cursor-pointer">
+                  {{ isMeaningRevealed ? '🙈 隐去释义背词' : '👁️ 显示释义' }}
                 </button>
               </div>
 
-              <div v-if="english.isMeaningRevealed" class="space-y-1">
+              <div v-if="isMeaningRevealed" class="space-y-1">
                 <p class="text-sm sm:text-base font-bold text-amber-950 dark:text-amber-100">
-                  {{ english.currentWord.translation }}
+                  {{ currentWord.translation }}
                 </p>
                 <p class="text-[11px] italic text-amber-900/80 dark:text-amber-300/80 bg-amber-50/70 dark:bg-stone-800/70 p-2 rounded-xl border border-amber-100 dark:border-stone-700">
-                  💬 "{{ english.currentWord.example }}"
+                  💬 "{{ currentWord.example }}"
                 </p>
               </div>
               <div v-else class="py-4 text-center text-xs text-amber-800/50 dark:text-amber-400/50">
@@ -937,24 +937,24 @@
             <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
               <div class="flex items-center gap-1.5">
                 <button 
-                  @click="english.toggleLearned()" 
-                  :class="['px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1', english.isCurrentLearned ? 'bg-emerald-600 text-white' : 'bg-white/80 dark:bg-stone-800 text-amber-950 dark:text-amber-100 hover:bg-white']"
+                  @click="toggleLearned()" 
+                  :class="['px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1 cursor-pointer', isCurrentLearned ? 'bg-emerald-600 text-white' : 'bg-white/80 dark:bg-stone-800 text-amber-950 dark:text-amber-100 hover:bg-white']"
                 >
-                  {{ english.isCurrentLearned ? '✓ 已学过' : '📖 标记今日已学' }}
+                  {{ isCurrentLearned ? '✓ 已学过' : '📖 标记今日已学' }}
                 </button>
                 <button 
-                  @click="english.toggleMastered()" 
-                  :class="['px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1', english.isCurrentMastered ? 'bg-purple-600 text-white' : 'bg-amber-950 dark:bg-amber-400 text-white dark:text-amber-950 hover:bg-stone-900']"
+                  @click="toggleMastered()" 
+                  :class="['px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1 cursor-pointer', isCurrentMastered ? 'bg-purple-600 text-white' : 'bg-amber-950 dark:bg-amber-400 text-white dark:text-amber-950 hover:bg-stone-900']"
                 >
-                  {{ english.isCurrentMastered ? '✨ 已在斩词本' : '✨ 标记为已记住(斩词)' }}
+                  {{ isCurrentMastered ? '✨ 已在斩词本' : '✨ 标记为已记住(斩词)' }}
                 </button>
               </div>
 
               <div class="flex items-center gap-1.5">
-                <button @click="english.prevWord" class="px-3 py-1.5 rounded-xl bg-white/70 dark:bg-stone-800 hover:bg-white text-xs font-bold">
+                <button @click="prevWord" class="px-3 py-1.5 rounded-xl bg-white/70 dark:bg-stone-800 hover:bg-white text-xs font-bold cursor-pointer">
                   ⬅️ 上一词
                 </button>
-                <button @click="english.nextWord" class="px-3 py-1.5 rounded-xl bg-amber-950 dark:bg-amber-400 text-white dark:text-amber-950 hover:bg-stone-900 text-xs font-bold">
+                <button @click="nextWord" class="px-3 py-1.5 rounded-xl bg-amber-950 dark:bg-amber-400 text-white dark:text-amber-950 hover:bg-stone-900 text-xs font-bold cursor-pointer">
                   下一词 ➡️
                 </button>
               </div>
@@ -966,15 +966,15 @@
             <span class="text-[10px] font-bold text-stone-400 uppercase tracking-wider">今日推荐 10 词矩阵索引</span>
             <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
               <button 
-                v-for="(w, idx) in english.dailyWords" 
+                v-for="(w, idx) in dailyWords" 
                 :key="w.word"
-                @click="english.selectedWordIndex = idx"
-                :class="['p-2 rounded-2xl border text-left transition', english.selectedWordIndex === idx ? 'border-amber-400 bg-amber-50 dark:bg-stone-700 font-bold' : 'border-amber-100 dark:border-stone-700 hover:bg-amber-50/50']"
+                @click="selectedWordIndex = idx"
+                :class="['p-2 rounded-2xl border text-left transition cursor-pointer', selectedWordIndex === idx ? 'border-amber-400 bg-amber-50 dark:bg-stone-700 font-bold' : 'border-amber-100 dark:border-stone-700 hover:bg-amber-50/50']"
               >
                 <div class="flex items-center justify-between text-xs">
                   <span class="font-mono text-xs font-bold text-stone-900 dark:text-amber-100 truncate">{{ w.word }}</span>
-                  <span v-if="english.masteredWords.includes(w.word)" class="text-[10px] text-purple-600 font-bold">✨</span>
-                  <span v-else-if="english.learnedWords.includes(w.word)" class="text-[10px] text-emerald-600 font-bold">✓</span>
+                  <span v-if="masteredWords.includes(w.word)" class="text-[10px] text-purple-600 font-bold">✨</span>
+                  <span v-else-if="learnedWords.includes(w.word)" class="text-[10px] text-emerald-600 font-bold">✓</span>
                 </div>
                 <p class="text-[10px] text-stone-400 truncate mt-0.5">{{ w.translation }}</p>
               </button>
@@ -983,23 +983,23 @@
         </div>
 
         <!-- 2. 已斩词本 (管理已记住的单词) -->
-        <div v-if="english.activeTabSub === 'mastered'" class="space-y-3">
+        <div v-if="activeTabSub === 'mastered'" class="space-y-3">
           <div class="bg-white dark:bg-stone-800 p-4 rounded-3xl shadow-butter border border-amber-100 dark:border-stone-700 space-y-3">
             <div class="flex items-center justify-between">
               <div>
-                <h4 class="text-xs font-bold text-stone-900 dark:text-amber-100">✨ 已掌握斩词本 (共 {{ english.masteredWords.length }} 词)</h4>
+                <h4 class="text-xs font-bold text-stone-900 dark:text-amber-100">✨ 已掌握斩词本 (共 {{ masteredWords.length }} 词)</h4>
                 <p class="text-[10px] text-stone-400">已自动从每日轮询推荐池中剔除 🐻✨</p>
               </div>
             </div>
 
-            <div v-if="english.masteredWords.length === 0" class="py-10 text-center space-y-1">
+            <div v-if="masteredWords.length === 0" class="py-10 text-center space-y-1">
               <span class="text-3xl">✨</span>
               <p class="text-xs text-stone-400">暂无斩词，背词时点击“标记为已记住”即可加入！</p>
             </div>
 
             <div v-else class="divide-y divide-amber-100 dark:divide-stone-700 max-h-[400px] overflow-y-auto pr-1">
               <div 
-                v-for="item in english.masteredWordDetails" 
+                v-for="item in masteredWordDetails" 
                 :key="item.word"
                 class="py-2.5 flex items-center justify-between gap-2 text-xs"
               >
@@ -1013,8 +1013,8 @@
                 </div>
                 
                 <button 
-                  @click="english.toggleMastered(item.word)" 
-                  class="px-2.5 py-1 rounded-xl bg-stone-100 dark:bg-stone-700 hover:bg-rose-100 text-stone-600 dark:text-stone-300 hover:text-rose-600 transition text-[11px] font-bold"
+                  @click="toggleMastered(item.word)" 
+                  class="px-2.5 py-1 rounded-xl bg-stone-100 dark:bg-stone-700 hover:bg-rose-100 text-stone-600 dark:text-stone-300 hover:text-rose-600 transition text-[11px] font-bold cursor-pointer"
                 >
                   ↩️ 恢复推荐
                 </button>
@@ -1280,8 +1280,8 @@
 
 </div>
 
-<!-- 原生 ES6 模块化主应用入口 (带版本号强行破除手机端Safari静态缓存) -->
-<script type="module" src="js/app.js?v=4.3"></script>
+<!-- 原生 ES6 模块化主应用入口 (带版本号强行破除浏览器静态缓存) -->
+<script type="module" src="js/app.js?v=5.5"></script>
 
 </body>
 </html>
