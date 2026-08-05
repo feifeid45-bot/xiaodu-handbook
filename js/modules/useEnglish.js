@@ -10,6 +10,14 @@ const STORAGE_KEYS = {
   MASTERED: 'xiaodu_english_mastered_v1'
 };
 
+const DEFAULT_FALLBACK_WORD = {
+  word: 'Learning',
+  phonetic: 'ˈlɜːrnɪŋ',
+  translation: '学习；知识',
+  category: '核心实用',
+  example: 'Continuous learning opens up new possibilities.'
+};
+
 export function useEnglish(showToast) {
   // 1. 已学习与已记住单词集合存储
   const learnedWords = ref(storageService.get(STORAGE_KEYS.LEARNED, []));
@@ -20,30 +28,35 @@ export function useEnglish(showToast) {
 
   // 2. 基于日期与斩词过滤的 10 词推荐算法
   const getDaily10Words = () => {
-    const masteredSet = new Set(masteredWords.value);
-    const availablePool = ENGLISH_WORD_BANK_2000.filter(item => !masteredSet.has(item.word));
+    try {
+      const masteredSet = new Set(masteredWords.value || []);
+      const availablePool = ENGLISH_WORD_BANK_2000.filter(item => item && item.word && !masteredSet.has(item.word));
 
-    if (availablePool.length === 0) {
+      if (availablePool.length === 0) {
+        return ENGLISH_WORD_BANK_2000.slice(0, 10);
+      }
+
+      const todayStr = new Date().toISOString().substring(0, 10);
+      let hash = 0;
+      for (let i = 0; i < todayStr.length; i++) {
+        hash = (hash << 5) - hash + todayStr.charCodeAt(i);
+        hash |= 0;
+      }
+      const seed = Math.abs(hash);
+
+      const totalPool = availablePool.length;
+      const startIndex = seed % totalPool;
+
+      const dailyWords = [];
+      for (let i = 0; i < Math.min(10, totalPool); i++) {
+        const idx = (startIndex + i * 3) % totalPool;
+        dailyWords.push(availablePool[idx]);
+      }
+      return dailyWords.length > 0 ? dailyWords : ENGLISH_WORD_BANK_2000.slice(0, 10);
+    } catch (err) {
+      console.warn('getDaily10Words 异常，触发降级:', err);
       return ENGLISH_WORD_BANK_2000.slice(0, 10);
     }
-
-    const todayStr = new Date().toISOString().substring(0, 10);
-    let hash = 0;
-    for (let i = 0; i < todayStr.length; i++) {
-      hash = (hash << 5) - hash + todayStr.charCodeAt(i);
-      hash |= 0;
-    }
-    const seed = Math.abs(hash);
-
-    const totalPool = availablePool.length;
-    const startIndex = seed % totalPool;
-
-    const dailyWords = [];
-    for (let i = 0; i < Math.min(10, totalPool); i++) {
-      const idx = (startIndex + i * 3) % totalPool;
-      dailyWords.push(availablePool[idx]);
-    }
-    return dailyWords;
   };
 
   const dailyWords = ref(getDaily10Words());
@@ -51,20 +64,27 @@ export function useEnglish(showToast) {
   const activeTabSub = ref('study'); // 'study' 背词 | 'mastered' 已斩词库
   const isMeaningRevealed = ref(true);
 
-  // 显式响应式切换 Tab 函数 (保证移动端和 PC 端点击 100% 驱动视图更新)
+  // 显式响应式切换 Tab 函数
   const switchSubTab = (tabName) => {
     activeTabSub.value = tabName;
   };
 
-  const currentWord = computed(() => dailyWords.value[selectedWordIndex.value] || dailyWords.value[0]);
+  // 强力零空指针保底 computed
+  const currentWord = computed(() => {
+    if (dailyWords.value && dailyWords.value.length > 0) {
+      const wordObj = dailyWords.value[selectedWordIndex.value] || dailyWords.value[0];
+      return wordObj || DEFAULT_FALLBACK_WORD;
+    }
+    return DEFAULT_FALLBACK_WORD;
+  });
 
   const isCurrentLearned = computed(() => {
-    if (!currentWord.value) return false;
+    if (!currentWord.value || !currentWord.value.word) return false;
     return learnedWords.value.includes(currentWord.value.word);
   });
 
   const isCurrentMastered = computed(() => {
-    if (!currentWord.value) return false;
+    if (!currentWord.value || !currentWord.value.word) return false;
     return masteredWords.value.includes(currentWord.value.word);
   });
 
@@ -119,7 +139,7 @@ export function useEnglish(showToast) {
   };
 
   const playAudio = (type = 'us') => {
-    if (!currentWord.value) return;
+    if (!currentWord.value || !currentWord.value.word) return;
     const word = currentWord.value.word;
     speechService.playWord(word, type);
     if (showToast) {
@@ -129,8 +149,8 @@ export function useEnglish(showToast) {
   };
 
   const masteredWordDetails = computed(() => {
-    const masteredSet = new Set(masteredWords.value);
-    return ENGLISH_WORD_BANK_2000.filter(item => masteredSet.has(item.word));
+    const masteredSet = new Set(masteredWords.value || []);
+    return ENGLISH_WORD_BANK_2000.filter(item => item && item.word && masteredSet.has(item.word));
   });
 
   return {

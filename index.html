@@ -855,19 +855,19 @@
             <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">自动过滤已记住单词，每日精选轮换 🐻✨</p>
           </div>
 
-          <!-- 子 Tab 切换 (直接绑定顶层响应式变量 activeTabSub) -->
+          <!-- 子 Tab 切换 -->
           <div class="flex items-center bg-amber-50 dark:bg-stone-700 p-0.5 rounded-2xl border border-amber-200/60 dark:border-stone-600">
             <button 
               @click="switchSubTab('study')" 
               :class="['px-3 py-1 rounded-xl text-[11px] font-bold transition cursor-pointer', activeTabSub === 'study' ? 'bg-amber-400 text-amber-950 shadow-xs' : 'text-stone-500 dark:text-stone-300']"
             >
-              📖 每日推荐 ({{ dailyWords.length }})
+              📖 每日推荐 ({{ dailyWords ? dailyWords.length : 0 }})
             </button>
             <button 
               @click="switchSubTab('mastered')" 
               :class="['px-3 py-1 rounded-xl text-[11px] font-bold transition cursor-pointer', activeTabSub === 'mastered' ? 'bg-amber-400 text-amber-950 shadow-xs' : 'text-stone-500 dark:text-stone-300']"
             >
-              ✨ 已斩词本 ({{ masteredWords.length }})
+              ✨ 已斩词本 ({{ masteredWords ? masteredWords.length : 0 }})
             </button>
           </div>
         </div>
@@ -879,21 +879,21 @@
             
             <div class="flex items-center justify-between text-xs font-semibold">
               <span class="px-2.5 py-0.5 rounded-full bg-white/70 dark:bg-stone-800 text-amber-900 dark:text-amber-200 text-[10px] font-bold">
-                🏷️ {{ currentWord ? currentWord.category : '核心实用' }}
+                🏷️ {{ currentWord?.category || '核心实用' }}
               </span>
               <div class="flex items-center gap-1.5">
                 <span v-if="isCurrentLearned" class="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold">✓ 已学习</span>
                 <span v-if="isCurrentMastered" class="px-2 py-0.5 rounded-full bg-purple-600 text-white text-[10px] font-bold">✨ 已斩词</span>
-                <span class="text-[11px] font-bold text-amber-900/80 dark:text-amber-300/80">第 {{ selectedWordIndex + 1 }} / {{ dailyWords.length }} 词</span>
+                <span class="text-[11px] font-bold text-amber-900/80 dark:text-amber-300/80">第 {{ selectedWordIndex + 1 }} / {{ dailyWords ? dailyWords.length : 10 }} 词</span>
               </div>
             </div>
 
-            <div class="py-2 space-y-1" v-if="currentWord">
+            <div class="py-2 space-y-1">
               <h4 class="text-3xl sm:text-4xl font-extrabold tracking-wide font-mono text-amber-950 dark:text-amber-50">
-                {{ currentWord.word }}
+                {{ currentWord?.word || 'Learning' }}
               </h4>
               <p class="text-xs font-medium text-amber-900/80 dark:text-amber-300/80 font-mono">
-                / {{ currentWord.phonetic }} /
+                / {{ currentWord?.phonetic || 'ˈlɜːrnɪŋ' }} /
               </p>
               
               <div class="flex justify-center items-center gap-2 pt-2">
@@ -912,7 +912,7 @@
               </div>
             </div>
 
-            <div v-if="currentWord" class="bg-white/80 dark:bg-stone-900/90 backdrop-blur-md p-4 rounded-2xl text-left space-y-1.5 border border-white/50 dark:border-stone-800">
+            <div class="bg-white/80 dark:bg-stone-900/90 backdrop-blur-md p-4 rounded-2xl text-left space-y-1.5 border border-white/50 dark:border-stone-800">
               <div class="flex items-center justify-between text-[11px]">
                 <span class="font-bold text-amber-900/60 dark:text-amber-400/60 uppercase">中文释义与例句</span>
                 <button @click="isMeaningRevealed = !isMeaningRevealed" class="text-amber-800 dark:text-amber-400 font-bold hover:underline cursor-pointer">
@@ -922,10 +922,10 @@
 
               <div v-if="isMeaningRevealed" class="space-y-1">
                 <p class="text-sm sm:text-base font-bold text-amber-950 dark:text-amber-100">
-                  {{ currentWord.translation }}
+                  {{ currentWord?.translation || '学习；知识' }}
                 </p>
                 <p class="text-[11px] italic text-amber-900/80 dark:text-amber-300/80 bg-amber-50/70 dark:bg-stone-800/70 p-2 rounded-xl border border-amber-100 dark:border-stone-700">
-                  💬 "{{ currentWord.example }}"
+                  💬 "{{ currentWord?.example || 'Continuous learning opens up new possibilities.' }}"
                 </p>
               </div>
               <div v-else class="py-4 text-center text-xs text-amber-800/50 dark:text-amber-400/50">
@@ -967,16 +967,16 @@
             <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
               <button 
                 v-for="(w, idx) in dailyWords" 
-                :key="w.word"
+                :key="w ? w.word : idx"
                 @click="selectedWordIndex = idx"
                 :class="['p-2 rounded-2xl border text-left transition cursor-pointer', selectedWordIndex === idx ? 'border-amber-400 bg-amber-50 dark:bg-stone-700 font-bold' : 'border-amber-100 dark:border-stone-700 hover:bg-amber-50/50']"
               >
-                <div class="flex items-center justify-between text-xs">
+                <div class="flex items-center justify-between text-xs" v-if="w">
                   <span class="font-mono text-xs font-bold text-stone-900 dark:text-amber-100 truncate">{{ w.word }}</span>
-                  <span v-if="masteredWords.includes(w.word)" class="text-[10px] text-purple-600 font-bold">✨</span>
-                  <span v-else-if="learnedWords.includes(w.word)" class="text-[10px] text-emerald-600 font-bold">✓</span>
+                  <span v-if="masteredWords && masteredWords.includes(w.word)" class="text-[10px] text-purple-600 font-bold">✨</span>
+                  <span v-else-if="learnedWords && learnedWords.includes(w.word)" class="text-[10px] text-emerald-600 font-bold">✓</span>
                 </div>
-                <p class="text-[10px] text-stone-400 truncate mt-0.5">{{ w.translation }}</p>
+                <p class="text-[10px] text-stone-400 truncate mt-0.5" v-if="w">{{ w.translation }}</p>
               </button>
             </div>
           </div>
@@ -987,12 +987,12 @@
           <div class="bg-white dark:bg-stone-800 p-4 rounded-3xl shadow-butter border border-amber-100 dark:border-stone-700 space-y-3">
             <div class="flex items-center justify-between">
               <div>
-                <h4 class="text-xs font-bold text-stone-900 dark:text-amber-100">✨ 已掌握斩词本 (共 {{ masteredWords.length }} 词)</h4>
+                <h4 class="text-xs font-bold text-stone-900 dark:text-amber-100">✨ 已掌握斩词本 (共 {{ masteredWords ? masteredWords.length : 0 }} 词)</h4>
                 <p class="text-[10px] text-stone-400">已自动从每日轮询推荐池中剔除 🐻✨</p>
               </div>
             </div>
 
-            <div v-if="masteredWords.length === 0" class="py-10 text-center space-y-1">
+            <div v-if="!masteredWords || masteredWords.length === 0" class="py-10 text-center space-y-1">
               <span class="text-3xl">✨</span>
               <p class="text-xs text-stone-400">暂无斩词，背词时点击“标记为已记住”即可加入！</p>
             </div>
@@ -1000,10 +1000,10 @@
             <div v-else class="divide-y divide-amber-100 dark:divide-stone-700 max-h-[400px] overflow-y-auto pr-1">
               <div 
                 v-for="item in masteredWordDetails" 
-                :key="item.word"
+                :key="item ? item.word : Math.random()"
                 class="py-2.5 flex items-center justify-between gap-2 text-xs"
               >
-                <div>
+                <div v-if="item">
                   <div class="flex items-center gap-2">
                     <span class="font-bold font-mono text-xs text-stone-900 dark:text-amber-100">{{ item.word }}</span>
                     <span class="text-[10px] text-stone-400">/ {{ item.phonetic }} /</span>
@@ -1013,6 +1013,7 @@
                 </div>
                 
                 <button 
+                  v-if="item"
                   @click="toggleMastered(item.word)" 
                   class="px-2.5 py-1 rounded-xl bg-stone-100 dark:bg-stone-700 hover:bg-rose-100 text-stone-600 dark:text-stone-300 hover:text-rose-600 transition text-[11px] font-bold cursor-pointer"
                 >
