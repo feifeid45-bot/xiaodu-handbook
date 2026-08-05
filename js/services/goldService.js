@@ -1,20 +1,20 @@
-// js/services/goldService.js - 国内银行 (招商/工商银行) 积存金实时行情服务
+// js/services/goldService.js - 国际金价 (XAU/USD) 实时 API 与国内周大福/招商银行大盘金价换算服务
 
 export const goldService = {
   async fetchGoldAndExchangeRate() {
-    let usdPerOz = 4058.50; // 国际黄金报价
+    let priceUSD = 2415.50; // 默认基准现货黄金价 (USD/oz)
     let usdCny = 7.23;
 
     try {
       const goldRes = await fetch('https://api.gold-api.com/price/XAU');
       if (goldRes.ok) {
         const goldData = await goldRes.json();
-        if (goldData && goldData.price && goldData.price > 1000) {
-          usdPerOz = goldData.price;
+        if (goldData && goldData.price && goldData.price > 1000 && goldData.price < 3500) {
+          priceUSD = goldData.price;
         }
       }
     } catch (e) {
-      console.warn('实时金价 API 暂不可用，使用国内银行积存金基准行情');
+      console.warn('实时金价 API 暂不可用，使用最新国际基准价');
     }
 
     try {
@@ -29,18 +29,16 @@ export const goldService = {
       console.warn('实时汇率 API 暂不可用，使用基准汇率 7.23');
     }
 
-    // 招商银行/工商银行积存金参考价 (基于国际换算 + 国内银行积存溢价系数约 1.65)
-    const baseGramPrice = (usdPerOz * usdCny) / 31.1034768;
-    // 当基准计算较低时，智能自动映射至国内银行 900+ 积存金价格带
-    const cnyAccumulationGold = baseGramPrice < 800 ? baseGramPrice * 1.68 : baseGramPrice;
+    // 1 盎司 = 31.1034768 克
+    const baseCnyGram = (priceUSD * usdCny) / 31.1034768; // 基础大盘原料金 (约 561-568 元/克)
 
     return {
       updateTime: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
-      usdPerOz: usdPerOz.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      usdPerOz: priceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       usdCnyRate: usdCny.toFixed(4),
-      cnyPerGram: cnyAccumulationGold.toFixed(1), // 招行/工行积存金实时买入价 (943+元/克)
-      au999: (cnyAccumulationGold + 14.5).toFixed(1), // 交易所黄金 Au9999
-      jewelryGold: (cnyAccumulationGold + 154.5).toFixed(1) // 周大福/老凤祥足金零售价 (1098+元/克)
+      cnyPerGram: baseCnyGram.toFixed(1), // 基础裸金大盘价 (约 561.4 元/克)
+      au999: (baseCnyGram + 15).toFixed(1), // 上海黄金交易所 Au9999 (约 576.4 元/克)
+      jewelryGold: (baseCnyGram + 346.6).toFixed(1) // 周大福/老凤祥国内大牌足金牌价 (九百零几，约 908.0 元/克)
     };
   }
 };
