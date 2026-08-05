@@ -21,7 +21,6 @@ export function useEnglish(showToast) {
   // 2. 基于日期与斩词过滤的 10 词推荐算法
   const getDaily10Words = () => {
     const masteredSet = new Set(masteredWords.value);
-    // 过滤掉所有已记住的单词
     const availablePool = ENGLISH_WORD_BANK_2000.filter(item => !masteredSet.has(item.word));
 
     if (availablePool.length === 0) {
@@ -50,11 +49,15 @@ export function useEnglish(showToast) {
   const dailyWords = ref(getDaily10Words());
   const selectedWordIndex = ref(0);
   const activeTabSub = ref('study'); // 'study' 背词 | 'mastered' 已斩词库
-  const isMeaningRevealed = ref(true); // 听音隐义/卡片背词开关
+  const isMeaningRevealed = ref(true);
+
+  // 显式响应式切换 Tab 函数 (保证移动端和 PC 端点击 100% 驱动视图更新)
+  const switchSubTab = (tabName) => {
+    activeTabSub.value = tabName;
+  };
 
   const currentWord = computed(() => dailyWords.value[selectedWordIndex.value] || dailyWords.value[0]);
 
-  // 判断状态
   const isCurrentLearned = computed(() => {
     if (!currentWord.value) return false;
     return learnedWords.value.includes(currentWord.value.word);
@@ -65,7 +68,6 @@ export function useEnglish(showToast) {
     return masteredWords.value.includes(currentWord.value.word);
   });
 
-  // 3. 标记为【已学习】
   const toggleLearned = (wordStr = null) => {
     const targetWord = wordStr || (currentWord.value ? currentWord.value.word : null);
     if (!targetWord) return;
@@ -80,7 +82,6 @@ export function useEnglish(showToast) {
     }
   };
 
-  // 4. 标记为【已记住】(斩词，以后不再推荐)
   const toggleMastered = (wordStr = null) => {
     const targetWord = wordStr || (currentWord.value ? currentWord.value.word : null);
     if (!targetWord) return;
@@ -91,11 +92,9 @@ export function useEnglish(showToast) {
       if (showToast) showToast(`已将 [${targetWord}] 移出斩词本，恢复推荐`);
     } else {
       masteredWords.value.push(targetWord);
-      // 同时自动记为已学习
       if (!learnedWords.value.includes(targetWord)) learnedWords.value.push(targetWord);
       if (showToast) showToast(`✨ 已将 [${targetWord}] 收入斩词本！以后轮询不再出现`);
       
-      // 刷新推荐池
       dailyWords.value = getDaily10Words();
       if (selectedWordIndex.value >= dailyWords.value.length) selectedWordIndex.value = 0;
     }
@@ -139,6 +138,7 @@ export function useEnglish(showToast) {
     selectedWordIndex,
     currentWord,
     activeTabSub,
+    switchSubTab,
     isMeaningRevealed,
     learnedWords,
     masteredWords,

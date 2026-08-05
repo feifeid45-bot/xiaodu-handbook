@@ -810,11 +810,18 @@
               <span class="text-[11px] text-stone-400">共 {{ expenses.length }} 笔记录</span>
             </div>
 
-            <div class="space-y-2 max-h-[420px] overflow-y-auto pr-1">
-              <div v-if="expenses.length === 0" class="py-10 text-center text-stone-400 text-xs">
-                暂无支出记录，保持理性消费~
-                <div class="flex items-center gap-2.5">
-                  <div class="w-8 h-8 rounded-2xl bg-amber-100 dark:bg-stone-700 flex items-center justify-center text-sm flex-shrink-0">
+            <div class="space-y-2 max-h-[460px] overflow-y-auto pr-1">
+              <div v-if="expenses.length === 0" class="py-12 text-center text-stone-400 text-xs">
+                🍯 暂无支出记录，理性消费从今天开始~
+              </div>
+
+              <div 
+                v-for="item in expenses" 
+                :key="item.id"
+                class="p-3 rounded-2xl border border-amber-100/70 dark:border-stone-700/80 bg-amber-50/30 dark:bg-stone-850 flex items-center justify-between hover:border-amber-300 transition"
+              >
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-2xl bg-amber-100 dark:bg-stone-700 flex items-center justify-center text-base flex-shrink-0">
                     {{ getCategoryIcon(item.category) }}
                   </div>
                   <div>
@@ -823,9 +830,9 @@
                   </div>
                 </div>
 
-                <div class="flex items-center gap-2">
-                  <span class="font-bold text-stone-900 dark:text-amber-200 text-xs sm:text-sm">-¥ {{ Number(item.amount).toFixed(2) }}</span>
-                  <button @click="deleteExpense(item.id)" class="text-stone-300 hover:text-red-500 text-xs">
+                <div class="flex items-center gap-2.5">
+                  <span class="font-bold text-amber-950 dark:text-amber-200 text-xs sm:text-sm">-¥ {{ Number(item.amount).toFixed(2) }}</span>
+                  <button @click="deleteExpense(item.id)" class="text-stone-300 hover:text-red-500 transition text-xs p-1" title="删除本条记录">
                     <i class="fa-regular fa-trash-can"></i>
                   </button>
                 </div>
@@ -835,7 +842,6 @@
         </div>
       </section>
 
-      <!-- ==================== 模块五：英语学习 ==================== -->
       <!-- ==================== 模块五：英语学习 2.0 (2000+大词库、标记已学习、标记已记住斩词) ==================== -->
       <section v-if="activeTab === 'english'" class="space-y-3.5">
         <!-- 顶部功能栏与 tab 切换 -->
@@ -849,11 +855,11 @@
             <p class="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">自动过滤已记住单词，每日精选轮换 🐻✨</p>
           </div>
 
-          <!-- 子 Tab 切换 -->
+          <!-- 子 Tab 切换 (使用 switchSubTab 确保 100% 触发视图响应) -->
           <div class="flex items-center bg-amber-50 dark:bg-stone-700 p-0.5 rounded-2xl border border-amber-200/60 dark:border-stone-600">
             <button 
-              @click="english.activeTabSub = 'study'" 
-              :class="['px-3 py-1 rounded-xl text-[11px] font-bold transition', english.activeTabSub === 'study' ? 'bg-amber-400 text-amber-950 shadow-xs' : 'text-stone-500 dark:text-stone-300']"
+              @click="english.switchSubTab('study')" 
+              :class="['px-3 py-1 rounded-xl text-[11px] font-bold transition cursor-pointer', english.activeTabSub === 'study' ? 'bg-amber-400 text-amber-950 shadow-xs' : 'text-stone-500 dark:text-stone-300']"
             >
               📖 每日推荐 ({{ english.dailyWords.length }})
             </button>
