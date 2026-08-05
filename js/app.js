@@ -178,6 +178,7 @@ createApp({
       ...todoModule,
       ...habitModule,
       ...expenseModule,
+      english: englishModule,
       ...englishModule,
       ...goldModule,
       ...weightModule,
