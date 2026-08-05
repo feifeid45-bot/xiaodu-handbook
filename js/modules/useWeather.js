@@ -59,7 +59,6 @@ export function useWeather(showToast) {
   const drawButterBearIcon = (ctx, centerX, centerY, size = 26) => {
     ctx.save();
     
-    // 基础偏移坐标 (将 100x100 的坐标系映射到 centerX, centerY, 尺寸为 size)
     const scale = size / 100;
     const originX = centerX - size / 2;
     const originY = centerY - size / 2;
@@ -68,18 +67,15 @@ export function useWeather(showToast) {
     const mapY = (y) => originY + y * scale;
     const mapR = (r) => r * scale;
 
-    // 1. 黄油金卡片底座 (#FBBF24)
     ctx.fillStyle = '#FBBF24';
     ctx.beginPath();
     ctx.roundRect(originX, originY, size, size, 8 * scale * 3.5);
     ctx.fill();
 
-    // 白边亮光轮廓
     ctx.strokeStyle = '#FFFFFF';
     ctx.lineWidth = 1.2;
     ctx.stroke();
 
-    // 2. 左耳朵 (#D97706 与 #FEF08A)
     ctx.fillStyle = '#D97706';
     ctx.beginPath();
     ctx.arc(mapX(26), mapY(26), mapR(14), 0, Math.PI * 2);
@@ -89,7 +85,6 @@ export function useWeather(showToast) {
     ctx.arc(mapX(26), mapY(26), mapR(7), 0, Math.PI * 2);
     ctx.fill();
 
-    // 3. 右耳朵 (#D97706 与 #FEF08A)
     ctx.fillStyle = '#D97706';
     ctx.beginPath();
     ctx.arc(mapX(74), mapY(26), mapR(14), 0, Math.PI * 2);
@@ -99,20 +94,17 @@ export function useWeather(showToast) {
     ctx.arc(mapX(74), mapY(26), mapR(7), 0, Math.PI * 2);
     ctx.fill();
 
-    // 4. 大圆脸庞 (#FEF08A)
     ctx.fillStyle = '#FEF08A';
     ctx.beginPath();
     ctx.arc(mapX(50), mapY(54), mapR(33), 0, Math.PI * 2);
     ctx.fill();
 
-    // 5. 眼睛 (#451A03)
     ctx.fillStyle = '#451A03';
     ctx.beginPath();
     ctx.arc(mapX(38), mapY(46), mapR(4.5), 0, Math.PI * 2);
     ctx.arc(mapX(62), mapY(46), mapR(4.5), 0, Math.PI * 2);
     ctx.fill();
 
-    // 6. 嘴巴基座 (#F59E0B) 与 小鼻头 (#451A03)
     ctx.fillStyle = '#F59E0B';
     ctx.beginPath();
     ctx.ellipse(mapX(50), mapY(57), mapR(9), mapR(6.5), 0, 0, Math.PI * 2);
@@ -123,7 +115,6 @@ export function useWeather(showToast) {
     ctx.ellipse(mapX(50), mapY(54.5), mapR(4.5), mapR(3), 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // 7. 粉嫩腮红 (#F472B6)
     ctx.fillStyle = 'rgba(244, 114, 182, 0.75)';
     ctx.beginPath();
     ctx.arc(mapX(31), mapY(55), mapR(5.5), 0, Math.PI * 2);
@@ -168,7 +159,6 @@ export function useWeather(showToast) {
             const isRain = seg.icon.includes('🌧️') || seg.icon.includes('⛈️') || seg.icon.includes('🌦️');
             const isSun = seg.icon.includes('☀️');
 
-            // 1. 半透明天气区段色块
             if (isDark) {
               ctx.fillStyle = isRain 
                 ? 'rgba(30, 58, 138, 0.45)' 
@@ -186,10 +176,8 @@ export function useWeather(showToast) {
             const centerX = (leftX + rightX) / 2;
             const iconY = bottom - 42;
 
-            // 2. 1:1 绝对精准克隆左上角标志性【黄油小熊 🐻 徽章卡片】(尺寸 26px)
             drawButterBearIcon(ctx, centerX, iconY, 26);
 
-            // 3. 熊熊正下方显示天气图标与清晰描述 (例如: ☀️ 晴朗 / 🌧️ 小雨)
             const weatherText = `${seg.icon} ${getWeatherTextByIcon(seg.icon)}`;
             ctx.font = 'bold 10.5px "Noto Sans SC", sans-serif';
             ctx.textAlign = 'center';
@@ -281,13 +269,16 @@ export function useWeather(showToast) {
         const tempsMin = data.daily.temperature_2m_min;
         const dates = data.daily.time;
 
+        const currentConditionStr = currentWeatherCode >= 51 ? '阴雨' : (currentTemp > 28 ? '晴朗炎热' : '晴朗少云');
+        const currentIconStr = weatherService.getWeatherIconByCode(currentWeatherCode);
+
         const suggest = weatherService.getOutfitSuggestion(tempsMax[0], currentWeatherCode >= 51 ? '雨' : '晴');
         todayWeather.value = {
           temp: currentTemp,
           tempMax: Math.round(tempsMax[0]),
           tempMin: Math.round(tempsMin[0]),
-          condition: currentWeatherCode >= 51 ? '有雨' : (currentTemp > 28 ? '晴朗炎热' : '晴朗少云'),
-          icon: weatherService.getWeatherIconByCode(currentWeatherCode),
+          condition: currentConditionStr,
+          icon: currentIconStr,
           tip: `今日 ${selectedCity.value} 真实气温 ${currentTemp}°C，小熊提醒出行注意安全哦 🐻✨`,
           outfitTag: suggest.outfitTag,
           outfitRecommend: suggest.outfitRecommend,
@@ -333,6 +324,7 @@ export function useWeather(showToast) {
           };
         });
 
+        // 7 天预报数据联动对齐：今天 (idx === 0) 强制使用与顶部【今日核心天气大卡片】完全一致的天气状况与图标！
         const weekDaysMap = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
         forecast7Days.value = dates.slice(0, 7).map((dStr, idx) => {
           const parts = dStr.split('-');
@@ -341,8 +333,21 @@ export function useWeather(showToast) {
           const tMin = Math.round(tempsMin[idx]);
           const code = data.daily.weathercode[idx];
 
+          if (idx === 0) {
+            // 第 0 天（今天）强制与顶部实况核心卡片保持 100% 对齐呼应，决不分离矛盾！
+            return {
+              dateStr: '今天',
+              weekDay: weekDaysMap[dt.getDay()],
+              icon: currentIconStr,
+              condition: currentConditionStr,
+              tempMin: Math.round(tempsMin[0]),
+              tempMax: Math.round(tempsMax[0]),
+              outfit: tMax >= 28 ? '短袖T恤' : (tMax >= 22 ? '短袖+薄外套' : '长袖外套')
+            };
+          }
+
           return {
-            dateStr: idx === 0 ? '今天' : `${parts[1]}-${parts[2]}`,
+            dateStr: `${parts[1]}-${parts[2]}`,
             weekDay: weekDaysMap[dt.getDay()],
             icon: weatherService.getWeatherIconByCode(code),
             condition: code >= 51 ? '阴雨' : (tMax > 28 ? '晴朗' : '多云'),

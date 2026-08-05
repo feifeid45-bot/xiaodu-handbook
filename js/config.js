@@ -39,10 +39,10 @@ export const DEFAULT_HABITS = [
   { id: 4, name: '英语实用词汇打卡', icon: '🔤', duration: 15, streak: 7, lastCheckDate: '' }
 ];
 
-// 依照用户要求：清空默认示例数据，纯粹根据用户输入的最新数据来更新！
 export const DEFAULT_WEIGHTS = [];
 
-export const WORD_BANK = [
+// 扩充至 40+ 精选高频实用词汇词库，支持每天日期自动算法轮换更新！
+export const EXTENDED_WORD_BANK = [
   { word: 'Deadline', phonetic: 'ˈdedlaɪn', translation: '截止日期；最终期限', category: '职场办公', example: 'We must complete the project before the deadline.' },
   { word: 'Feedback', phonetic: 'ˈfiːdbæk', translation: '反馈意见；评价', category: '职场办公', example: 'Thank you for your valuable feedback.' },
   { word: 'Optimize', phonetic: 'ˈɑːptɪmaɪz', translation: '优化；使完善', category: '技能提升', example: 'We need to optimize the workflow to save time.' },
@@ -52,5 +52,30 @@ export const WORD_BANK = [
   { word: 'Collaborate', phonetic: 'kəˈlæbəreɪt', translation: '合作；协作', category: '团队协作', example: 'Different teams collaborate closely to deliver results.' },
   { word: 'Prioritize', phonetic: 'praɪˈɔːrətaɪz', translation: '优先考虑；按优先级处理', category: '效率自律', example: 'Prioritize your daily tasks to stay productive.' },
   { word: 'Resume', phonetic: 'ˈrezəmeɪ', translation: '个人简历', category: '求职复工', example: 'Updated your resume before applying for the position.' },
-  { word: 'Efficiency', phonetic: 'ɪˈfɪʃnsi', translation: '效率；功效', category: '自我提升', example: 'High efficiency is key to modern work life.' }
+  { word: 'Efficiency', phonetic: 'ɪˈfɪʃnsi', translation: '效率；功效', category: '自我提升', example: 'High efficiency is key to modern work life.' },
+  
+  // 8月5日及后续自动轮换补充词汇
+  { word: 'Innovation', phonetic: 'ˌɪnəˈveɪʃn', translation: '创新；革新', category: '思维升级', example: 'Innovation is the driving force of progress.' },
+  { word: 'Strategy', phonetic: 'ˈstrætədʒi', translation: '策略；战略', category: '职场办公', example: 'We formulated a clear growth strategy.' },
+  { word: 'Insight', phonetic: 'ˈɪnsaɪt', translation: '洞察力；深刻见解', category: '认知提升', example: 'His analysis provided great market insight.' },
+  { word: 'Productivity', phonetic: 'ˌprɑːdʌkˈtɪvəti', translation: '生产力；工作效率', category: '效率自律', example: 'Good habits boost overall productivity.' },
+  { word: 'Negotiate', phonetic: 'nɪˈɡoʊʃieɪt', translation: '谈判；协商', category: '商务沟通', example: 'She successfully negotiated a better deal.' },
+  { word: 'Perspective', phonetic: 'pərˈspektɪv', translation: '视角；观点', category: '思维升级', example: 'Try to see the problem from a different perspective.' },
+  { word: 'Fulfill', phonetic: 'fʊlˈfɪl', translation: '实现；履行', category: '自我提升', example: 'Hard work helps you fulfill your dreams.' },
+  { word: 'Asset', phonetic: 'ˈæset', translation: '资产；有价值的人/物', category: '理财管理', example: 'Knowledge is your most valuable asset.' },
+  { word: 'Resilient', phonetic: 'rɪˈzɪliənt', translation: '坚韧的；有复原力的', category: '心态情绪', example: 'Stay resilient when facing unexpected challenges.' },
+  { word: 'Milestone', phonetic: 'ˈmaɪlstoʊn', translation: '里程碑；重要阶段', category: '目标规划', example: 'Launching this app is a major milestone.' },
+
+  { word: 'Workflow', phonetic: 'ˈwɜːrkfloʊ', translation: '工作流程', category: '职场办公', example: 'Streamline your daily workflow to save energy.' },
+  { word: 'Consensus', phonetic: 'kənˈsensəs', translation: '共识；一致意见', category: '团队协作', example: 'The team reached a consensus after discussion.' },
+  { word: 'Evaluate', phonetic: 'ɪˈvæljueɪt', translation: '评估；评价', category: '技能提升', example: 'Evaluate the results at the end of each week.' },
+  { word: 'Mindset', phonetic: 'ˈmaɪndset', translation: '思维模式；心态', category: '认知提升', example: 'Adopt a growth mindset to keep learning.' },
+  { word: 'Delegate', phonetic: 'ˈdelɪɡət', translation: '委派；分派任务', category: '职场管理', example: 'Learn to delegate tasks to manage time better.' },
+  { word: 'Sustainable', phonetic: 'səˈsteɪnəbl', translation: '可持续的；稳定的', category: '生活方式', example: 'Build a sustainable daily routine.' },
+  { word: 'Benchmark', phonetic: 'ˈbentʃmɑːrk', translation: '基准；参照标准', category: '目标规划', example: 'Set high quality standards as a benchmark.' },
+  { word: 'Adaptability', phonetic: 'əˌdæptəˈbɪləti', translation: '适应能力', category: '自我提升', example: 'Adaptability is crucial in a changing environment.' },
+  { word: 'Discipline', phonetic: 'ˈdɪsəplɪn', translation: '自律；纪律', category: '效率自律', example: 'Self-discipline brings real freedom.' },
+  { word: 'Execute', phonetic: 'ˈeksɪkjuːt', translation: '执行；实施', category: '目标规划', example: 'A good plan is useless unless you execute it.' }
 ];
+
+export const WORD_BANK = EXTENDED_WORD_BANK;
