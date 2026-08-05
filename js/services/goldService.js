@@ -1,10 +1,12 @@
-// js/services/goldService.js - 中国工商银行 (ICBC) 积存金与国际现货黄金 API 权威服务
+// js/services/goldService.js - 中国工商银行 (ICBC) 积存金与国际现货黄金 API 权威服务 (含今日最高价/最低价)
 
 export const goldService = {
   async fetchGoldAndExchangeRate() {
     let usdPerOz = '4,077.20';
     let usdCny = '7.2300';
     let sgeBaseNum = 904.20;
+    let highPriceNum = 907.49;
+    let lowPriceNum = 883.10;
     let sgeChangeStr = '+2.23%';
     let timeStr = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
@@ -20,6 +22,8 @@ export const goldService = {
           const sgeData = lines[0].split('=')[1].replace(/"/g, '').split(',');
           if (sgeData.length > 8 && !isNaN(parseFloat(sgeData[3]))) {
             sgeBaseNum = parseFloat(sgeData[3]);
+            if (!isNaN(parseFloat(sgeData[7]))) highPriceNum = parseFloat(sgeData[7]);
+            if (!isNaN(parseFloat(sgeData[8]))) lowPriceNum = parseFloat(sgeData[8]);
             if (sgeData[17]) sgeChangeStr = sgeData[17];
             if (sgeData[16]) {
               const tPart = sgeData[16].split(' ');
@@ -45,15 +49,25 @@ export const goldService = {
     const sellPrice = (sgeBaseNum - 1.80).toFixed(2);
     const spread = (1.60 + 1.80).toFixed(2);
 
+    // 计算当前价格在今日高低区间的位置百分比 (% 位置)
+    const range = highPriceNum - lowPriceNum;
+    let posPercent = 50;
+    if (range > 0) {
+      posPercent = Math.min(100, Math.max(0, Math.round(((sgeBaseNum - lowPriceNum) / range) * 100)));
+    }
+
     return {
       updateTime: timeStr,
       usdPerOz,
       usdCnyRate: usdCny,
-      buyPrice,      // 工行积存金买入价 (如 905.80 元/克)
-      sellPrice,     // 工行积存金卖出价 (如 902.40 元/克)
-      spread,        // 买卖点差 (3.40 元/克)
-      sgeBase: sgeBaseNum.toFixed(2), // SGE Au9999 基准价 (904.20 元/克)
-      sgeChange: sgeChangeStr         // 涨跌幅 (+2.23%)
+      buyPrice,                       // 工行积存金买入价
+      sellPrice,                      // 工行积存金卖出价
+      spread,                         // 买卖点差
+      sgeBase: sgeBaseNum.toFixed(2),  // SGE Au9999 基准价
+      highPrice: highPriceNum.toFixed(2), // 今日最高价
+      lowPrice: lowPriceNum.toFixed(2),   // 今日最低价
+      posPercent,                     // 当前价格在区间中的位置 (0-100)
+      sgeChange: sgeChangeStr          // 涨跌幅
     };
   }
 };

@@ -1034,7 +1034,7 @@
         </div>
       </section>
 
-      <!-- ==================== 模块六：实时金价 (工行积存金与国际黄金行情控制台) ==================== -->
+      <!-- ==================== 模块六：实时金价 (含今日最高价/最低价与动态区间条) ==================== -->
       <section v-if="activeTab === 'gold'" class="space-y-3.5">
         <div class="flex items-center justify-between bg-white dark:bg-stone-800 p-3.5 rounded-3xl border border-amber-100 dark:border-stone-700 shadow-butter text-xs">
           <div class="flex items-center gap-2">
@@ -1054,7 +1054,7 @@
         </div>
 
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-          <!-- 1. 【首位放置】：国际现货黄金 (XAU/USD 美元/盎司) -->
+          <!-- 1. 国际现货黄金 -->
           <div class="bg-gradient-to-br from-amber-400 via-yellow-300 to-amber-200 dark:from-stone-900 dark:via-stone-850 dark:to-stone-950 text-amber-950 dark:text-amber-100 p-4 rounded-3xl shadow-butter space-y-1.5 border border-transparent dark:border-amber-700/30">
             <div class="flex items-center justify-between">
               <span class="text-[11px] font-extrabold opacity-80 uppercase tracking-wider">🌐 国际现货黄金 (XAU)</span>
@@ -1064,7 +1064,7 @@
             <p class="text-[10px] opacity-90 font-medium">汇率参考: {{ goldPrice.usdCnyRate }} CNY/USD</p>
           </div>
 
-          <!-- 2. 工行积存金 买入价 (元/克) -->
+          <!-- 2. 工行积存金 买入价 -->
           <div class="bg-white dark:bg-stone-800 p-4 rounded-3xl border border-amber-100 dark:border-stone-700 shadow-butter space-y-1.5">
             <div class="flex items-center justify-between">
               <span class="text-[11px] font-bold text-rose-600 dark:text-rose-400">🔴 工行积存金 买入价</span>
@@ -1074,7 +1074,7 @@
             <p class="text-[10px] text-stone-400 font-medium">元/克 (适合主动积存建仓)</p>
           </div>
 
-          <!-- 3. 工行积存金 卖出价 (元/克) -->
+          <!-- 3. 工行积存金 卖出价 -->
           <div class="bg-white dark:bg-stone-800 p-4 rounded-3xl border border-amber-100 dark:border-stone-700 shadow-butter space-y-1.5">
             <div class="flex items-center justify-between">
               <span class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">🟢 工行积存金 卖出价</span>
@@ -1084,7 +1084,7 @@
             <p class="text-[10px] text-stone-400 font-medium">元/克 (买卖点差: ¥{{ goldPrice.spread }})</p>
           </div>
 
-          <!-- 4. 上海金交所 Au9999 (元/克) -->
+          <!-- 4. 上海金交所 Au9999 -->
           <div class="bg-white dark:bg-stone-800 p-4 rounded-3xl border border-amber-100 dark:border-stone-700 shadow-butter space-y-1.5">
             <div class="flex items-center justify-between">
               <span class="text-[11px] font-bold text-stone-600 dark:text-stone-300">🏢 上海金交所 Au9999</span>
@@ -1092,6 +1092,45 @@
             </div>
             <p class="text-2xl sm:text-3xl font-extrabold font-mono text-amber-950 dark:text-amber-100">¥ {{ goldPrice.sgeBase }}</p>
             <p class="text-[10px] text-stone-400 font-medium">元/克 (中国境内现货大盘)</p>
+          </div>
+        </div>
+
+        <!-- 5. 【新增】：今日最高价与最低价区间判定进度条 (一目了然看清高低位置) -->
+        <div class="bg-white dark:bg-stone-800 p-4 rounded-3xl border border-amber-100 dark:border-stone-700 shadow-butter space-y-2.5">
+          <div class="flex items-center justify-between text-xs font-bold">
+            <span class="text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
+              📊 今日盘中价格走势区间分析
+              <span class="text-[10px] font-normal text-stone-400">(当前价格处于今日分时高低位置的 {{ goldPrice.posPercent }}%)</span>
+            </span>
+            <span class="text-amber-600 dark:text-amber-400 text-[11px]">
+              {{ goldPrice.posPercent > 70 ? '🔥 处于较高位置' : (goldPrice.posPercent < 30 ? '💎 处于较低位置' : '⚖️ 处于中位震荡') }}
+            </span>
+          </div>
+
+          <!-- 动态区间条 -->
+          <div class="relative pt-1 pb-1">
+            <div class="w-full h-3 rounded-full bg-stone-100 dark:bg-stone-700 overflow-hidden relative border border-stone-200/60 dark:border-stone-600">
+              <div 
+                class="h-full rounded-full bg-gradient-to-r from-emerald-400 via-yellow-400 to-rose-500 transition-all duration-500" 
+                :style="{ width: `${goldPrice.posPercent}%` }"
+              ></div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between text-xs font-mono font-bold">
+            <div class="text-emerald-600 dark:text-emerald-400">
+              <span class="text-[10px] text-stone-400 block font-sans">🔻 今日最低价</span>
+              ¥ {{ goldPrice.lowPrice }} <span class="text-[10px] font-sans">元/克</span>
+            </div>
+
+            <div class="text-center text-amber-900 dark:text-amber-200 text-[11px]">
+              基准现货: ¥ {{ goldPrice.sgeBase }}
+            </div>
+
+            <div class="text-right text-rose-600 dark:text-rose-400">
+              <span class="text-[10px] text-stone-400 block font-sans">🔺 今日最高价</span>
+              ¥ {{ goldPrice.highPrice }} <span class="text-[10px] font-sans">元/克</span>
+            </div>
           </div>
         </div>
       </section>
@@ -1311,7 +1350,7 @@
 </div>
 
 <!-- 原生 ES6 模块化主应用入口 (带版本号强行破除浏览器静态缓存) -->
-<script type="module" src="js/app.js?v=15.0"></script>
+<script type="module" src="js/app.js?v=16.0"></script>
 
 </body>
 </html>
