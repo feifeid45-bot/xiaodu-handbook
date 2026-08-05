@@ -721,7 +721,7 @@
         </div>
       </section>
 
-      <!-- ==================== 模块四：极简记账 (总账单、本月账单与当月总流水) ==================== -->
+      <!-- ==================== 模块四：极简记账 (总账单、本月账单与完整流水明细) ==================== -->
       <section v-if="activeTab === 'expense'" class="space-y-3.5">
         <div class="bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-300 dark:from-stone-900 dark:via-stone-850 dark:to-stone-950 p-4 sm:p-5 rounded-3xl shadow-butter text-amber-950 dark:text-amber-100 flex items-center justify-between gap-2 border border-transparent dark:border-amber-700/30">
           <div class="flex items-center gap-4 sm:gap-8 flex-1 min-w-0">
@@ -736,7 +736,7 @@
             </div>
           </div>
 
-          <button @click="setBudget" class="px-3 py-1.5 text-xs rounded-xl bg-white/70 dark:bg-stone-800 hover:bg-white text-amber-950 dark:text-amber-200 font-bold transition flex-shrink-0 shadow-xs">
+          <button @click="setBudget" class="px-3 py-1.5 text-xs rounded-xl bg-white/70 dark:bg-stone-800 hover:bg-white text-amber-950 dark:text-amber-200 font-bold transition flex-shrink-0 shadow-xs cursor-pointer">
             ⚙️ 设月预算
           </button>
         </div>
@@ -769,9 +769,9 @@
                     type="button"
                     v-for="cat in categories" 
                     :key="cat.name"
-                    @click="newExpense.category = cat.name"
+                    @click="selectCategory(cat.name)"
                     class="p-1.5 rounded-2xl border text-xs flex flex-col items-center gap-0.5 transition cursor-pointer"
-                    :class="newExpense.category === cat.name ? 'border-amber-500 bg-amber-100 dark:bg-stone-700 text-amber-900 dark:text-amber-200 font-bold' : 'border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300'"
+                    :class="newExpense.category === cat.name ? 'border-amber-500 bg-amber-100 dark:bg-stone-700 text-amber-900 dark:text-amber-200 font-bold shadow-xs' : 'border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300'"
                   >
                     <span class="text-sm">{{ cat.icon }}</span>
                     <span class="text-[10px]">{{ cat.name }}</span>
@@ -798,21 +798,21 @@
             </form>
           </div>
 
-          <!-- 当月总流水记录 -->
+          <!-- 账单明细流水记录 -->
           <div class="lg:col-span-7 bg-white dark:bg-stone-800 p-3.5 sm:p-4 rounded-3xl border border-amber-100 dark:border-stone-700 shadow-butter space-y-3">
             <div class="flex items-center justify-between">
-              <h3 class="font-bold text-stone-800 dark:text-stone-200 text-xs sm:text-sm">📅 当月总流水记录</h3>
-              <span class="text-[11px] text-stone-400">本月共 {{ currentMonthExpenses.length }} 笔</span>
+              <h3 class="font-bold text-stone-800 dark:text-stone-200 text-xs sm:text-sm">📖 账单明细流水记录</h3>
+              <span class="text-[11px] text-stone-400">共 {{ currentMonthExpenses.length }} 笔记录</span>
             </div>
 
             <div class="space-y-2 max-h-[460px] overflow-y-auto pr-1">
               <div v-if="currentMonthExpenses.length === 0" class="py-12 text-center text-stone-400 text-xs">
-                🍯 本月暂无支出流水，理性消费从今天开始~
+                🍯 暂无支出记录，填写左侧表单保存您的第一笔记账吧~
               </div>
 
               <div 
                 v-for="item in currentMonthExpenses" 
-                :key="item.id"
+                :key="item.id || item.time"
                 class="p-3 rounded-2xl border border-amber-100/70 dark:border-stone-700/80 bg-amber-50/30 dark:bg-stone-850 flex items-center justify-between hover:border-amber-300 transition"
               >
                 <div class="flex items-center gap-3">
@@ -1290,7 +1290,7 @@
 </div>
 
 <!-- 原生 ES6 模块化主应用入口 (带版本号强行破除浏览器静态缓存) -->
-<script type="module" src="js/app.js?v=9.0"></script>
+<script type="module" src="js/app.js?v=10.0"></script>
 
 </body>
 </html>

@@ -1,4 +1,4 @@
-// js/modules/useExpense.js - 极简记账解耦 Controller (支持总账单、本月账单、当月总流水与预算设置)
+// js/modules/useExpense.js - 极简记账解耦 Controller (超强兼容防为空 + 宽泛月份匹配 + 显示设置)
 
 const { ref, computed, watch } = Vue;
 import { EXPENSE_CATEGORIES } from '../config.js';
@@ -28,28 +28,42 @@ export function useExpense(showToast) {
     return cat ? cat.icon : '📦';
   };
 
-  // 1. 全站总账单金额
+  const selectCategory = (catName) => {
+    newExpense.value.category = catName;
+  };
+
+  // 1. 全站总账单金额 (所有历史记录总和)
   const totalExpensesAmount = computed(() => {
     if (!expenses.value || !Array.isArray(expenses.value)) return 0;
     return expenses.value.reduce((acc, item) => acc + (Number(item.amount) || 0), 0);
   });
 
-  // 2. 本月账单金额
+  // 2. 本月账单金额 (兼容各类日期格式 2026-08-05 / 2026/08/05)
   const currentMonthExpensesAmount = computed(() => {
     if (!expenses.value || !Array.isArray(expenses.value)) return 0;
     const now = new Date();
-    const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const curYear = now.getFullYear();
+    const curMonth = now.getMonth() + 1;
+
     return expenses.value
-      .filter(item => item && item.date && item.date.startsWith(currentMonthStr))
+      .filter(item => {
+        if (!item || !item.date) return true; // 保底全算
+        const dateStr = String(item.date).replace(/\//g, '-');
+        const parts = dateStr.split('-');
+        if (parts.length >= 2) {
+          const itemYear = parseInt(parts[0]);
+          const itemMonth = parseInt(parts[1]);
+          return itemYear === curYear && itemMonth === curMonth;
+        }
+        return true;
+      })
       .reduce((acc, item) => acc + (Number(item.amount) || 0), 0);
   });
 
-  // 3. 当月总流水记录
+  // 3. 账单明细流水记录列表 (按时间降序倒序排列，优先展示最新的)
   const currentMonthExpenses = computed(() => {
     if (!expenses.value || !Array.isArray(expenses.value)) return [];
-    const now = new Date();
-    const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    return expenses.value.filter(item => item && item.date && item.date.startsWith(currentMonthStr));
+    return [...expenses.value].sort((a, b) => (b.id || 0) - (a.id || 0));
   });
 
   const setBudget = () => {
@@ -67,7 +81,7 @@ export function useExpense(showToast) {
     }
 
     const d = new Date();
-    const dateStr = d.toISOString().substring(0, 10);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 
     const item = {
@@ -82,10 +96,11 @@ export function useExpense(showToast) {
     if (!Array.isArray(expenses.value)) expenses.value = [];
     expenses.value.unshift(item);
 
+    // 重置表单
     newExpense.value.amount = '';
     newExpense.value.remark = '';
 
-    if (showToast) showToast(`成功记一笔: ¥${item.amount} (${item.category})`);
+    if (showToast) showToast(`成功保存支出: ¥${item.amount} (${item.category})`);
   };
 
   const deleteExpense = (id) => {
@@ -103,6 +118,7 @@ export function useExpense(showToast) {
     currentMonthExpensesAmount,
     currentMonthExpenses,
     getCategoryIcon,
+    selectCategory,
     setBudget,
     addExpense,
     deleteExpense
