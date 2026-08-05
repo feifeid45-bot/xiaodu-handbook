@@ -721,34 +721,28 @@
         </div>
       </section>
 
-      <!-- ==================== 模块四：极简记账 ==================== -->
+      <!-- ==================== 模块四：极简记账 (总账单、本月账单与当月总流水) ==================== -->
       <section v-if="activeTab === 'expense'" class="space-y-3.5">
-        <div class="bg-gradient-to-r from-amber-400 to-yellow-300 dark:from-amber-600 dark:to-yellow-600 p-3 sm:p-4 rounded-3xl shadow-butter text-amber-950 dark:text-white flex items-center justify-between gap-2">
-          <div class="flex items-center gap-3 sm:gap-6 flex-1 min-w-0">
+        <div class="bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-300 dark:from-stone-900 dark:via-stone-850 dark:to-stone-950 p-4 sm:p-5 rounded-3xl shadow-butter text-amber-950 dark:text-amber-100 flex items-center justify-between gap-2 border border-transparent dark:border-amber-700/30">
+          <div class="flex items-center gap-4 sm:gap-8 flex-1 min-w-0">
             <div>
-              <p class="text-[10px] sm:text-xs opacity-80">本月总支出</p>
-              <p class="text-base sm:text-xl font-bold font-fredoka">¥ {{ expenseStats.month }}</p>
+              <p class="text-[10px] sm:text-xs opacity-75 font-semibold">全站总账单</p>
+              <p class="text-lg sm:text-2xl font-extrabold font-mono text-amber-950 dark:text-amber-50">¥ {{ Number(totalExpensesAmount).toFixed(2) }}</p>
             </div>
-            <div class="w-px h-6 bg-amber-950/20"></div>
+            <div class="w-px h-7 bg-amber-950/20 dark:bg-amber-100/20"></div>
             <div>
-              <p class="text-[10px] sm:text-xs opacity-80">今日支出</p>
-              <p class="text-base sm:text-xl font-bold font-fredoka">¥ {{ expenseStats.today }}</p>
-            </div>
-            <div class="w-px h-6 bg-amber-950/20 hidden xs:block"></div>
-            <div class="hidden xs:block">
-              <p class="text-[10px] sm:text-xs opacity-80">预算已用</p>
-              <p class="text-xs sm:text-sm font-bold" :class="expenseStats.budgetOver ? 'text-red-700' : ''">
-                {{ expenseStats.budgetPercent }}% (¥{{ monthlyBudget }})
-              </p>
+              <p class="text-[10px] sm:text-xs opacity-75 font-semibold">本月账单</p>
+              <p class="text-lg sm:text-2xl font-extrabold font-mono text-amber-950 dark:text-amber-50">¥ {{ Number(currentMonthExpensesAmount).toFixed(2) }}</p>
             </div>
           </div>
 
-          <button @click="setBudget" class="px-2.5 py-1 text-xs rounded-xl bg-white/40 dark:bg-black/20 hover:bg-white/60 font-bold transition flex-shrink-0">
-            ⚙️ 预算
+          <button @click="setBudget" class="px-3 py-1.5 text-xs rounded-xl bg-white/70 dark:bg-stone-800 hover:bg-white text-amber-950 dark:text-amber-200 font-bold transition flex-shrink-0 shadow-xs">
+            ⚙️ 设月预算
           </button>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <!-- 快速记一笔 -->
           <div class="lg:col-span-5 bg-white dark:bg-stone-800 p-3.5 sm:p-4 rounded-3xl border border-amber-100 dark:border-stone-700 shadow-butter space-y-3">
             <h3 class="font-bold text-stone-800 dark:text-stone-200 text-xs sm:text-sm">✏️ 快速记一笔</h3>
             
@@ -776,8 +770,8 @@
                     v-for="cat in categories" 
                     :key="cat.name"
                     @click="newExpense.category = cat.name"
-                    class="p-1.5 rounded-2xl border text-xs flex flex-col items-center gap-0.5 transition bear-btn-pop"
-                    :class="newExpense.category === cat.name ? 'border-amber-500 bg-amber-100 dark:bg-stone-700 text-amber-900 font-bold' : 'border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300'"
+                    class="p-1.5 rounded-2xl border text-xs flex flex-col items-center gap-0.5 transition cursor-pointer"
+                    :class="newExpense.category === cat.name ? 'border-amber-500 bg-amber-100 dark:bg-stone-700 text-amber-900 dark:text-amber-200 font-bold' : 'border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300'"
                   >
                     <span class="text-sm">{{ cat.icon }}</span>
                     <span class="text-[10px]">{{ cat.name }}</span>
@@ -797,26 +791,27 @@
 
               <button 
                 type="submit" 
-                class="w-full py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-bold text-xs shadow-md shadow-amber-400/30 transition bear-btn-pop"
+                class="w-full py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-bold text-xs shadow-md shadow-amber-400/30 transition cursor-pointer"
               >
                 保存支出
               </button>
             </form>
           </div>
 
+          <!-- 当月总流水记录 -->
           <div class="lg:col-span-7 bg-white dark:bg-stone-800 p-3.5 sm:p-4 rounded-3xl border border-amber-100 dark:border-stone-700 shadow-butter space-y-3">
             <div class="flex items-center justify-between">
-              <h3 class="font-bold text-stone-800 dark:text-stone-200 text-xs sm:text-sm">📖 账单明细流水</h3>
-              <span class="text-[11px] text-stone-400">共 {{ expenses.length }} 笔记录</span>
+              <h3 class="font-bold text-stone-800 dark:text-stone-200 text-xs sm:text-sm">📅 当月总流水记录</h3>
+              <span class="text-[11px] text-stone-400">本月共 {{ currentMonthExpenses.length }} 笔</span>
             </div>
 
             <div class="space-y-2 max-h-[460px] overflow-y-auto pr-1">
-              <div v-if="expenses.length === 0" class="py-12 text-center text-stone-400 text-xs">
-                🍯 暂无支出记录，理性消费从今天开始~
+              <div v-if="currentMonthExpenses.length === 0" class="py-12 text-center text-stone-400 text-xs">
+                🍯 本月暂无支出流水，理性消费从今天开始~
               </div>
 
               <div 
-                v-for="item in expenses" 
+                v-for="item in currentMonthExpenses" 
                 :key="item.id"
                 class="p-3 rounded-2xl border border-amber-100/70 dark:border-stone-700/80 bg-amber-50/30 dark:bg-stone-850 flex items-center justify-between hover:border-amber-300 transition"
               >
@@ -832,7 +827,7 @@
 
                 <div class="flex items-center gap-2.5">
                   <span class="font-bold text-amber-950 dark:text-amber-200 text-xs sm:text-sm">-¥ {{ Number(item.amount).toFixed(2) }}</span>
-                  <button @click="deleteExpense(item.id)" class="text-stone-300 hover:text-red-500 transition text-xs p-1" title="删除本条记录">
+                  <button @click="deleteExpense(item.id)" class="text-stone-300 hover:text-red-500 transition text-xs p-1 cursor-pointer" title="删除本条记录">
                     <i class="fa-regular fa-trash-can"></i>
                   </button>
                 </div>
@@ -842,7 +837,7 @@
         </div>
       </section>
 
-      <!-- ==================== 模块五：英语学习 2.0 (2000+大词库、标记已学习、标记已记住斩词) ==================== -->
+      <!-- ==================== 模块五：英语学习 2.0 (UX 大按钮优化与发音修复) ==================== -->
       <section v-if="activeTab === 'english'" class="space-y-3.5">
         <!-- 顶部功能栏与 tab 切换 -->
         <div class="bg-white dark:bg-stone-800 p-3.5 sm:p-4 rounded-3xl shadow-butter border border-amber-100 dark:border-stone-700 flex flex-wrap items-center justify-between gap-2">
@@ -889,8 +884,13 @@
             </div>
 
             <div class="py-2 space-y-1">
-              <h4 class="text-3xl sm:text-4xl font-extrabold tracking-wide font-mono text-amber-950 dark:text-amber-50">
-                {{ currentWord?.word || 'Learning' }}
+              <!-- 点击标题直接发音 -->
+              <h4 
+                @click="playAudio('us')" 
+                class="text-3xl sm:text-4xl font-extrabold tracking-wide font-mono text-amber-950 dark:text-amber-50 cursor-pointer hover:opacity-80 transition" 
+                title="点击听美音发音"
+              >
+                {{ currentWord?.word || 'Learning' }} 🔊
               </h4>
               <p class="text-xs font-medium text-amber-900/80 dark:text-amber-300/80 font-mono">
                 / {{ currentWord?.phonetic || 'ˈlɜːrnɪŋ' }} /
@@ -899,19 +899,20 @@
               <div class="flex justify-center items-center gap-2 pt-2">
                 <button 
                   @click="playAudio('us')" 
-                  class="px-3 py-1 rounded-xl bg-white/80 dark:bg-stone-800 hover:bg-white text-amber-950 dark:text-amber-100 text-xs font-bold transition shadow-xs flex items-center gap-1 cursor-pointer"
+                  class="px-3.5 py-1.5 rounded-xl bg-white/80 dark:bg-stone-800 hover:bg-white text-amber-950 dark:text-amber-100 text-xs font-bold transition shadow-xs flex items-center gap-1 cursor-pointer"
                 >
-                  🔊 美音
+                  🔊 美音发音
                 </button>
                 <button 
                   @click="playAudio('uk')" 
-                  class="px-3 py-1 rounded-xl bg-white/80 dark:bg-stone-800 hover:bg-white text-amber-950 dark:text-amber-100 text-xs font-bold transition shadow-xs flex items-center gap-1 cursor-pointer"
+                  class="px-3.5 py-1.5 rounded-xl bg-white/80 dark:bg-stone-800 hover:bg-white text-amber-950 dark:text-amber-100 text-xs font-bold transition shadow-xs flex items-center gap-1 cursor-pointer"
                 >
-                  🇬🇧 英音
+                  🇬🇧 英音发音
                 </button>
               </div>
             </div>
 
+            <!-- 释义区 -->
             <div class="bg-white/80 dark:bg-stone-900/90 backdrop-blur-md p-4 rounded-2xl text-left space-y-1.5 border border-white/50 dark:border-stone-800">
               <div class="flex items-center justify-between text-[11px]">
                 <span class="font-bold text-amber-900/60 dark:text-amber-400/60 uppercase">中文释义与例句</span>
@@ -933,29 +934,36 @@
               </div>
             </div>
 
-            <!-- 核心交互：标记已学习 / 标记已记住斩词 -->
-            <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
-              <div class="flex items-center gap-1.5">
+            <!-- 【UX 重磅重构】：【上一词】与【下一词】作为高频核心大按钮，大气横排放置！ -->
+            <div class="space-y-3 pt-2">
+              <div class="grid grid-cols-2 gap-3">
                 <button 
-                  @click="toggleLearned()" 
-                  :class="['px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1 cursor-pointer', isCurrentLearned ? 'bg-emerald-600 text-white' : 'bg-white/80 dark:bg-stone-800 text-amber-950 dark:text-amber-100 hover:bg-white']"
+                  @click="prevWord" 
+                  class="py-3 sm:py-3.5 rounded-2xl bg-white/90 dark:bg-stone-800 hover:bg-white text-amber-950 dark:text-amber-100 font-extrabold text-sm sm:text-base shadow-md transition cursor-pointer flex items-center justify-center gap-2"
                 >
-                  {{ isCurrentLearned ? '✓ 已学过' : '📖 标记今日已学' }}
+                  ⬅️ 上一词
                 </button>
                 <button 
-                  @click="toggleMastered()" 
-                  :class="['px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1 cursor-pointer', isCurrentMastered ? 'bg-purple-600 text-white' : 'bg-amber-950 dark:bg-amber-400 text-white dark:text-amber-950 hover:bg-stone-900']"
+                  @click="nextWord" 
+                  class="py-3 sm:py-3.5 rounded-2xl bg-amber-950 dark:bg-amber-400 text-white dark:text-amber-950 hover:bg-stone-900 font-extrabold text-sm sm:text-base shadow-md transition cursor-pointer flex items-center justify-center gap-2"
                 >
-                  {{ isCurrentMastered ? '✨ 已在斩词本' : '✨ 标记为已记住(斩词)' }}
+                  下一词 ➡️
                 </button>
               </div>
 
-              <div class="flex items-center gap-1.5">
-                <button @click="prevWord" class="px-3 py-1.5 rounded-xl bg-white/70 dark:bg-stone-800 hover:bg-white text-xs font-bold cursor-pointer">
-                  ⬅️ 上一词
+              <!-- 辅助打卡/斩词标记按钮 (低调沉稳设计，区分视觉层级) -->
+              <div class="flex items-center justify-center gap-2 pt-1">
+                <button 
+                  @click="toggleLearned()" 
+                  :class="['px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer', isCurrentLearned ? 'bg-emerald-600 text-white font-bold' : 'bg-white/50 dark:bg-stone-800/60 text-amber-900/80 dark:text-amber-200/80 hover:bg-white/80']"
+                >
+                  {{ isCurrentLearned ? '✓ 已标记打卡' : '📖 标记今日已学' }}
                 </button>
-                <button @click="nextWord" class="px-3 py-1.5 rounded-xl bg-amber-950 dark:bg-amber-400 text-white dark:text-amber-950 hover:bg-stone-900 text-xs font-bold cursor-pointer">
-                  下一词 ➡️
+                <button 
+                  @click="toggleMastered()" 
+                  :class="['px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer', isCurrentMastered ? 'bg-purple-600 text-white font-bold' : 'bg-white/50 dark:bg-stone-800/60 text-amber-900/80 dark:text-amber-200/80 hover:bg-white/80']"
+                >
+                  {{ isCurrentMastered ? '✨ 已在斩词本' : '✨ 标记为已记住(斩词)' }}
                 </button>
               </div>
             </div>
@@ -1282,7 +1290,7 @@
 </div>
 
 <!-- 原生 ES6 模块化主应用入口 (带版本号强行破除浏览器静态缓存) -->
-<script type="module" src="js/app.js?v=5.5"></script>
+<script type="module" src="js/app.js?v=6.5"></script>
 
 </body>
 </html>

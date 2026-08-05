@@ -27,11 +27,15 @@ createApp({
     const navItems = NAV_ITEMS;
     const currentNav = computed(() => navItems.find(i => i.id === activeTab.value) || navItems[0]);
 
-    // Toast 浮窗服务
-    const toast = ref({ show: false, msg: '', type: 'success' });
-    const showToast = (msg, type = 'success') => {
+    //  Toast 消息组件 (包含首屏 3 秒静默锁，彻底消除开屏打卡弹窗)
+    const isBooting = ref(true);
+    setTimeout(() => { isBooting.value = false; }, 3000);
+
+    const toast = ref({ show: false, msg: '', type: 'info' });
+    const showToast = (msg, type = 'info') => {
+      if (isBooting.value) return; // 开屏静默拦截，绝对零弹窗
       toast.value = { show: true, msg, type };
-      setTimeout(() => { toast.value.show = false; }, 3000);
+      setTimeout(() => { toast.value.show = false; }, 2500);
     };
 
     // 时间转换

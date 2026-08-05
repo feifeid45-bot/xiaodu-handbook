@@ -1,97 +1,95 @@
-// js/modules/useExpense.js - 极简记账与预算解耦 Controller
+// js/modules/useExpense.js - 极简记账解耦 Controller (支持总账单、本月账单与当月总流水)
 
-const { ref, computed } = Vue;
+const { ref, computed, watch } = Vue;
 import { EXPENSE_CATEGORIES } from '../config.js';
 import { storageService } from '../services/storageService.js';
 
-export function useExpense(todayFormatted, showToast) {
+export function useExpense(showToast) {
+  const expenses = ref(storageService.get(storageService.KEYS.EXPENSES, []));
+  const monthlyBudget = ref(storageService.getRaw(storageService.KEYS.BUDGET, '2000'));
   const categories = EXPENSE_CATEGORIES;
-  const rawExpenses = storageService.get(storageService.KEYS.EXPENSES, []);
-  
-  const expenses = ref(rawExpenses.map(e => ({
-    ...e,
-    date: e.date || todayFormatted,
-    month: e.month || todayFormatted.substring(0, 7)
-  })));
 
-  const monthlyBudget = ref(Number(storageService.getRaw(storageService.KEYS.BUDGET, '2500')));
-  const newExpense = ref({ amount: null, category: '餐饮', remark: '' });
+  const newExpense = ref({
+    amount: '',
+    category: '餐饮',
+    remark: ''
+  });
 
-  const expenseStats = computed(() => {
-    const currentMonthPrefix = todayFormatted.substring(0, 7);
+  watch(expenses, (val) => {
+    storageService.set(storageService.KEYS.EXPENSES, val);
+  }, { deep: true });
 
-    const todaySum = expenses.value
-      .filter(e => e.date === todayFormatted)
-      .reduce((sum, e) => sum + Number(e.amount), 0);
+  watch(monthlyBudget, (val) => {
+    storageService.setRaw(storageService.KEYS.BUDGET, val);
+  });
 
-    const monthSum = expenses.value
-      .filter(e => e.month === currentMonthPrefix || (e.date && e.date.startsWith(currentMonthPrefix)))
-      .reduce((sum, e) => sum + Number(e.amount), 0);
+  const getCategoryIcon = (catName) => {
+    const cat = categories.find(c => c.name === catName);
+    return cat ? cat.icon : '📦';
+  };
 
-    const budgetPercent = monthlyBudget.value > 0 ? Math.round((monthSum / monthlyBudget.value) * 100) : 0;
-    const budgetOver = monthSum > monthlyBudget.value;
+  const now = new Date();
+  const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-    return {
-      today: todaySum.toFixed(2),
-      month: monthSum.toFixed(2),
-      budgetPercent,
-      budgetOver
-    };
+  // 1. 全站总账单金额
+  const totalExpensesAmount = computed(() => {
+    return expenses.value.reduce((acc, item) => acc + (Number(item.amount) || 0), 0);
+  });
+
+  // 2. 本月账单金额
+  const currentMonthExpensesAmount = computed(() => {
+    return expenses.value
+      .filter(item => item.date && item.date.startsWith(currentMonthStr))
+      .reduce((acc, item) => acc + (Number(item.amount) || 0), 0);
+  });
+
+  // 3. 当月总流水记录
+  const currentMonthExpenses = computed(() => {
+    return expenses.value.filter(item => item.date && item.date.startsWith(currentMonthStr));
   });
 
   const addExpense = () => {
     if (!newExpense.value.amount || newExpense.value.amount <= 0) {
-      showToast('请输入有效消费金额', 'error');
+      if (showToast) showToast('请输入有效的支出金额', 'error');
       return;
     }
 
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    const d = new Date();
+    const dateStr = d.toISOString().substring(0, 10);
+    const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 
-    expenses.value.unshift({
+    const item = {
       id: Date.now(),
-      amount: Number(newExpense.value.amount),
+      amount: Number(newExpense.value.amount).toFixed(2),
       category: newExpense.value.category,
       remark: newExpense.value.remark.trim(),
-      date: todayFormatted,
-      month: todayFormatted.substring(0, 7),
+      date: dateStr,
       time: timeStr
-    });
+    };
 
-    storageService.set(storageService.KEYS.EXPENSES, expenses.value);
-    newExpense.value = { amount: null, category: '餐饮', remark: '' };
-    showToast('支出已保存！');
+    expenses.value.unshift(item);
+
+    newExpense.value.amount = '';
+    newExpense.value.remark = '';
+
+    if (showToast) showToast(`成功记一笔: ¥${item.amount} (${item.category})`);
   };
 
   const deleteExpense = (id) => {
-    expenses.value = expenses.value.filter(e => e.id !== id);
-    storageService.set(storageService.KEYS.EXPENSES, expenses.value);
-    showToast('记录已删除');
-  };
-
-  const setBudget = () => {
-    const input = prompt('设置您的月度预算金额 (元):', monthlyBudget.value);
-    if (input && !isNaN(input)) {
-      monthlyBudget.value = Number(input);
-      storageService.setRaw(storageService.KEYS.BUDGET, monthlyBudget.value);
-      showToast('预算设置成功！');
-    }
-  };
-
-  const getCategoryIcon = (catName) => {
-    const cat = categories.find(c => c.name === catName);
-    return cat ? cat.icon : '💸';
+    expenses.value = expenses.value.filter(item => item.id !== id);
+    if (showToast) showToast('已删除该笔支出记录');
   };
 
   return {
-    categories,
     expenses,
     monthlyBudget,
+    categories,
     newExpense,
-    expenseStats,
+    totalExpensesAmount,
+    currentMonthExpensesAmount,
+    currentMonthExpenses,
+    getCategoryIcon,
     addExpense,
-    deleteExpense,
-    setBudget,
-    getCategoryIcon
+    deleteExpense
   };
 }
