@@ -61,6 +61,12 @@ createApp({
     const switchTab = (tabId) => {
       activeTab.value = tabId;
       mobileMenuOpen.value = false;
+      if (tabId === 'weather') {
+        setTimeout(() => weatherModule.renderHourlyChart(), 100);
+      }
+      if (tabId === 'weight') {
+        setTimeout(() => weightModule.renderWeightChart(), 100);
+      }
     };
 
     const toggleSidebar = () => {

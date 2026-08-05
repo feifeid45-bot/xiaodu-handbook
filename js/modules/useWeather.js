@@ -1,4 +1,4 @@
-// js/modules/useWeather.js - 天气预报与 24h 墨迹风格 Canvas 绘图解耦 Controller
+// js/modules/useWeather.js - 天气预报与 24h 墨迹风格 Canvas 绘图 Controller (带强力防为空降级与自动重绘)
 
 const { ref, nextTick } = Vue;
 import { CITY_LIST } from '../config.js';
@@ -22,12 +22,42 @@ export function useWeather(showToast) {
     uvNotice: '中等防晒 🧴'
   });
 
-  const hourly24Weather = ref([]);
+  // 生成从当前时刻开始的 24 小时保底默认数据，防止数据未返回时折线图出现 0-1 坐标轴空白
+  const generateFallbackHourlyData = () => {
+    const fallback = [];
+    const now = new Date();
+    const currentHour = now.getHours();
+    const baseTemps = [22, 21, 20, 20, 19, 19, 20, 22, 24, 26, 28, 29, 29, 28, 27, 26, 25, 24, 23, 23, 22, 22, 22, 21];
+
+    for (let i = 0; i < 24; i++) {
+      const h = (currentHour + i) % 24;
+      const timeLabel = i === 0 ? '现在' : `${String(h).padStart(2, '0')}:00`;
+      const isNight = h < 6 || h >= 19;
+      const icon = isNight ? (i % 4 === 0 ? '☁️' : '🌙') : (i % 3 === 0 ? '⛅' : '☀️');
+      fallback.push({
+        timeStr: timeLabel,
+        temp: baseTemps[h] || 25,
+        icon
+      });
+    }
+    return fallback;
+  };
+
+  const hourly24Weather = ref(generateFallbackHourlyData());
   let hourlyChartInstance = null;
 
-  const forecast7Days = ref([]);
+  const forecast7Days = ref([
+    { dateStr: '今天', weekDay: '周三', icon: '☀️', condition: '晴朗少云', tempMin: 22, tempMax: 29, outfit: '短袖T恤' },
+    { dateStr: '08-06', weekDay: '周四', icon: '⛅', condition: '多云', tempMin: 21, tempMax: 28, outfit: '短袖+薄外套' },
+    { dateStr: '08-07', weekDay: '周五', icon: '🌦️', condition: '阵雨', tempMin: 20, tempMax: 26, outfit: '薄款长裤+雨伞' },
+    { dateStr: '08-08', weekDay: '周六', icon: '☀️', condition: '晴朗', tempMin: 22, tempMax: 30, outfit: '防晒短袖' },
+    { dateStr: '08-09', weekDay: '周日', icon: '☁️', condition: '阴天', tempMin: 21, tempMax: 27, outfit: '休闲运动服' },
+    { dateStr: '08-10', weekDay: '周一', icon: '⛅', condition: '多云', tempMin: 20, tempMax: 28, outfit: '短袖衬衫' },
+    { dateStr: '08-11', weekDay: '周二', icon: '☀️', condition: '晴朗', tempMin: 22, tempMax: 29, outfit: '薄款透气T恤' }
+  ]);
 
   const getWeatherTextByIcon = (icon) => {
+    if (!icon) return '多云';
     if (icon.includes('☀️')) return '晴朗';
     if (icon.includes('🌙')) return '晴夜';
     if (icon.includes('⛅')) return '多云';
@@ -41,13 +71,14 @@ export function useWeather(showToast) {
   const calculateWeatherSegments = (hourlyItems) => {
     if (!hourlyItems || hourlyItems.length === 0) return [];
     const segments = [];
-    let currIcon = hourlyItems[0].icon;
+    let currIcon = hourlyItems[0].icon || '☀️';
     let startIdx = 0;
 
     for (let i = 1; i < hourlyItems.length; i++) {
-      if (hourlyItems[i].icon !== currIcon) {
+      const itemIcon = hourlyItems[i].icon || '☀️';
+      if (itemIcon !== currIcon) {
         segments.push({ startIdx, endIdx: i - 1, icon: currIcon });
-        currIcon = hourlyItems[i].icon;
+        currIcon = itemIcon;
         startIdx = i;
       }
     }
@@ -55,8 +86,9 @@ export function useWeather(showToast) {
     return segments;
   };
 
-  // 1:1 绝对精准克隆左上角黄油小熊徽章 (依据 SVG 原理 100x100 几何矢量映射)
+  // 1:1 矢量绘制黄油小熊徽章
   const drawButterBearIcon = (ctx, centerX, centerY, size = 26) => {
+    if (!ctx) return;
     ctx.save();
     
     const scale = size / 100;
@@ -76,35 +108,33 @@ export function useWeather(showToast) {
     ctx.lineWidth = 1.2;
     ctx.stroke();
 
+    // 熊耳朵
     ctx.fillStyle = '#D97706';
     ctx.beginPath();
     ctx.arc(mapX(26), mapY(26), mapR(14), 0, Math.PI * 2);
+    ctx.arc(mapX(74), mapY(26), mapR(14), 0, Math.PI * 2);
     ctx.fill();
+
     ctx.fillStyle = '#FEF08A';
     ctx.beginPath();
     ctx.arc(mapX(26), mapY(26), mapR(7), 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#D97706';
-    ctx.beginPath();
-    ctx.arc(mapX(74), mapY(26), mapR(14), 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#FEF08A';
-    ctx.beginPath();
     ctx.arc(mapX(74), mapY(26), mapR(7), 0, Math.PI * 2);
     ctx.fill();
 
+    // 熊脸
     ctx.fillStyle = '#FEF08A';
     ctx.beginPath();
     ctx.arc(mapX(50), mapY(54), mapR(33), 0, Math.PI * 2);
     ctx.fill();
 
+    // 眼睛
     ctx.fillStyle = '#451A03';
     ctx.beginPath();
     ctx.arc(mapX(38), mapY(46), mapR(4.5), 0, Math.PI * 2);
     ctx.arc(mapX(62), mapY(46), mapR(4.5), 0, Math.PI * 2);
     ctx.fill();
 
+    // 嘴巴
     ctx.fillStyle = '#F59E0B';
     ctx.beginPath();
     ctx.ellipse(mapX(50), mapY(57), mapR(9), mapR(6.5), 0, 0, Math.PI * 2);
@@ -115,6 +145,7 @@ export function useWeather(showToast) {
     ctx.ellipse(mapX(50), mapY(54.5), mapR(4.5), mapR(3), 0, 0, Math.PI * 2);
     ctx.fill();
 
+    // 粉色腮红
     ctx.fillStyle = 'rgba(244, 114, 182, 0.75)';
     ctx.beginPath();
     ctx.arc(mapX(31), mapY(55), mapR(5.5), 0, Math.PI * 2);
@@ -126,127 +157,162 @@ export function useWeather(showToast) {
 
   const renderHourlyChart = () => {
     nextTick(() => {
-      const ctx = document.getElementById('hourlyWeatherChart');
+      const canvasEl = document.getElementById('hourlyWeatherChart');
+      if (!canvasEl) return;
+
+      const ctx = canvasEl.getContext('2d');
       if (!ctx) return;
 
-      if (hourlyChartInstance) hourlyChartInstance.destroy();
+      if (hourlyChartInstance) {
+        hourlyChartInstance.destroy();
+        hourlyChartInstance = null;
+      }
+
+      const items = hourly24Weather.value && hourly24Weather.value.length > 0
+        ? hourly24Weather.value
+        : generateFallbackHourlyData();
 
       const isDark = document.documentElement.classList.contains('dark');
+      const labels = items.map(h => h.timeStr);
+      const temps = items.map(h => Number(h.temp) || 20);
 
-      const labels = hourly24Weather.value.map(h => h.timeStr);
-      const temps = hourly24Weather.value.map(h => h.temp);
-      const segments = calculateWeatherSegments(hourly24Weather.value);
+      const minTemp = Math.min(...temps);
+      const maxTemp = Math.max(...temps);
+
+      const safeMin = isFinite(minTemp) ? minTemp - 3 : 15;
+      const safeMax = isFinite(maxTemp) ? maxTemp + 3 : 30;
+
+      const segments = calculateWeatherSegments(items);
 
       const mojiColorBlockPlugin = {
         id: 'mojiColorBlock',
         beforeDatasetsDraw(chart) {
-          const { ctx, chartArea: { top, bottom } } = chart;
-          ctx.save();
+          try {
+            const { ctx, chartArea } = chart;
+            if (!chartArea) return;
+            const { top, bottom } = chartArea;
+            ctx.save();
 
-          const meta = chart.getDatasetMeta(0);
-          const points = meta.data;
-
-          segments.forEach(seg => {
-            const startPoint = points[seg.startIdx];
-            const endPoint = points[seg.endIdx];
-
-            if (!startPoint || !endPoint) return;
-
-            const leftX = seg.startIdx === 0 ? startPoint.x - 15 : (startPoint.x + points[Math.max(0, seg.startIdx - 1)].x) / 2;
-            const rightX = seg.endIdx === points.length - 1 ? endPoint.x + 15 : (endPoint.x + points[Math.min(points.length - 1, seg.endIdx + 1)].x) / 2;
-            const width = rightX - leftX;
-
-            const isRain = seg.icon.includes('🌧️') || seg.icon.includes('⛈️') || seg.icon.includes('🌦️');
-            const isSun = seg.icon.includes('☀️');
-
-            if (isDark) {
-              ctx.fillStyle = isRain 
-                ? 'rgba(30, 58, 138, 0.45)' 
-                : (isSun ? 'rgba(120, 53, 15, 0.45)' : 'rgba(51, 65, 85, 0.5)');
-            } else {
-              ctx.fillStyle = isRain 
-                ? 'rgba(191, 219, 254, 0.45)' 
-                : (isSun ? 'rgba(254, 240, 138, 0.35)' : 'rgba(226, 232, 240, 0.35)');
+            const meta = chart.getDatasetMeta(0);
+            if (!meta || !meta.data || meta.data.length === 0) {
+              ctx.restore();
+              return;
             }
 
-            ctx.beginPath();
-            ctx.roundRect(leftX + 2, top + 32, width - 4, bottom - top - 52, 14);
-            ctx.fill();
+            const points = meta.data;
 
-            const centerX = (leftX + rightX) / 2;
-            const iconY = bottom - 42;
+            segments.forEach(seg => {
+              const startPoint = points[seg.startIdx];
+              const endPoint = points[seg.endIdx];
 
-            drawButterBearIcon(ctx, centerX, iconY, 26);
+              if (!startPoint || !endPoint) return;
 
-            const weatherText = `${seg.icon} ${getWeatherTextByIcon(seg.icon)}`;
-            ctx.font = 'bold 10.5px "Noto Sans SC", sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
+              const prevPoint = points[Math.max(0, seg.startIdx - 1)];
+              const nextPoint = points[Math.min(points.length - 1, seg.endIdx + 1)];
 
-            if (isDark) {
-              ctx.fillStyle = isRain ? '#93C5FD' : (isSun ? '#FDE047' : '#E2E8F0');
-            } else {
-              ctx.fillStyle = isRain ? '#1E40AF' : (isSun ? '#78350F' : '#475569');
-            }
-            ctx.fillText(weatherText, centerX, iconY + 20);
-          });
+              const leftX = seg.startIdx === 0 ? startPoint.x - 12 : (startPoint.x + (prevPoint ? prevPoint.x : startPoint.x)) / 2;
+              const rightX = seg.endIdx === points.length - 1 ? endPoint.x + 12 : (endPoint.x + (nextPoint ? nextPoint.x : endPoint.x)) / 2;
+              const width = Math.max(10, rightX - leftX);
 
-          ctx.restore();
+              const isRain = seg.icon.includes('🌧️') || seg.icon.includes('⛈️') || seg.icon.includes('🌦️');
+              const isSun = seg.icon.includes('☀️');
+
+              if (isDark) {
+                ctx.fillStyle = isRain 
+                  ? 'rgba(30, 58, 138, 0.45)' 
+                  : (isSun ? 'rgba(120, 53, 15, 0.45)' : 'rgba(51, 65, 85, 0.5)');
+              } else {
+                ctx.fillStyle = isRain 
+                  ? 'rgba(191, 219, 254, 0.45)' 
+                  : (isSun ? 'rgba(254, 240, 138, 0.35)' : 'rgba(226, 232, 240, 0.35)');
+              }
+
+              ctx.beginPath();
+              ctx.roundRect(leftX + 2, top + 25, width - 4, Math.max(20, bottom - top - 45), 12);
+              ctx.fill();
+
+              const centerX = (leftX + rightX) / 2;
+              const iconY = bottom - 38;
+
+              // 绘制黄油小熊徽章
+              drawButterBearIcon(ctx, centerX, iconY, 24);
+
+              const weatherText = `${seg.icon} ${getWeatherTextByIcon(seg.icon)}`;
+              ctx.font = 'bold 10px "Noto Sans SC", sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+
+              if (isDark) {
+                ctx.fillStyle = isRain ? '#93C5FD' : (isSun ? '#FDE047' : '#E2E8F0');
+              } else {
+                ctx.fillStyle = isRain ? '#1E40AF' : (isSun ? '#78350F' : '#475569');
+              }
+              ctx.fillText(weatherText, centerX, iconY + 18);
+            });
+
+            ctx.restore();
+          } catch (e) {
+            console.warn('Canvas 墨迹插件绘制捕获安全异常:', e);
+          }
         }
       };
 
-      hourlyChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [{
-            label: '气温 (°C)',
-            data: temps,
-            borderColor: isDark ? 'rgba(147, 197, 253, 0.85)' : 'rgba(96, 165, 250, 0.75)',
-            borderWidth: 1.8,
-            backgroundColor: isDark ? 'rgba(30, 58, 138, 0.2)' : 'rgba(191, 219, 254, 0.12)',
-            fill: true,
-            tension: 0.45,
-            pointRadius: 2.5,
-            pointHoverRadius: 5,
-            pointBackgroundColor: isDark ? '#60A5FA' : 'rgba(96, 165, 250, 0.9)',
-            pointBorderColor: '#FFFFFF',
-            pointBorderWidth: 1
-          }]
-        },
-        plugins: [mojiColorBlockPlugin],
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          devicePixelRatio: Math.max(2, window.devicePixelRatio || 1),
-          layout: { padding: { top: 15, bottom: 5, left: 10, right: 10 } },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                title: (items) => `时间: ${items[0].label}`,
-                label: (context) => ` 气温: ${context.parsed.y} °C`
+      try {
+        hourlyChartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: '气温 (°C)',
+              data: temps,
+              borderColor: isDark ? 'rgba(147, 197, 253, 0.85)' : 'rgba(96, 165, 250, 0.85)',
+              borderWidth: 2,
+              backgroundColor: isDark ? 'rgba(30, 58, 138, 0.25)' : 'rgba(191, 219, 254, 0.2)',
+              fill: true,
+              tension: 0.4,
+              pointRadius: 3,
+              pointHoverRadius: 6,
+              pointBackgroundColor: isDark ? '#60A5FA' : '#3B82F6',
+              pointBorderColor: '#FFFFFF',
+              pointBorderWidth: 1.5
+            }]
+          },
+          plugins: [mojiColorBlockPlugin],
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            devicePixelRatio: Math.max(2, window.devicePixelRatio || 1),
+            layout: { padding: { top: 15, bottom: 5, left: 10, right: 10 } },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  title: (items) => `时间: ${items[0].label}`,
+                  label: (context) => ` 气温: ${context.parsed.y} °C`
+                }
+              }
+            },
+            scales: {
+              x: {
+                grid: { display: false },
+                ticks: { font: { size: 10, weight: '500' }, color: isDark ? '#94A3B8' : '#64748B', maxRotation: 0 }
+              },
+              y: {
+                grid: { color: isDark ? 'rgba(51, 65, 85, 0.4)' : 'rgba(241, 245, 249, 0.8)' },
+                ticks: { font: { size: 10 }, color: isDark ? '#94A3B8' : '#64748B', callback: (val) => `${val}°` },
+                suggestedMin: safeMin,
+                suggestedMax: safeMax
               }
             }
-          },
-          scales: {
-            x: {
-              grid: { display: false },
-              ticks: { font: { size: 11, weight: '500' }, color: isDark ? '#94A3B8' : '#64748B', maxRotation: 0 }
-            },
-            y: {
-              grid: { color: isDark ? 'rgba(51, 65, 85, 0.4)' : 'rgba(241, 245, 249, 0.8)' },
-              ticks: { font: { size: 11 }, color: isDark ? '#94A3B8' : '#64748B', callback: (val) => `${val}°` },
-              suggestedMin: Math.min(...temps) - 4,
-              suggestedMax: Math.max(...temps) + 4
-            }
           }
-        }
-      });
+        });
+      } catch (err) {
+        console.error('Chart.js 实例化失败:', err);
+      }
     });
   };
 
-  const fetchWeatherData = async (overrideLat = null, overrideLon = null, cityName = null) => {
+  const fetchWeatherData = async (overrideLat = null, overrideLon = null, cityName = null, isSilent = false) => {
     isWeatherLoading.value = true;
     try {
       let lat = overrideLat;
@@ -291,22 +357,13 @@ export function useWeather(showToast) {
         const hourlyCodes = data.hourly.weathercode;
 
         const now = new Date();
-        const localYear = now.getFullYear();
-        const localMonth = String(now.getMonth() + 1).padStart(2, '0');
-        const localDate = String(now.getDate()).padStart(2, '0');
-        const localHour = String(now.getHours()).padStart(2, '0');
+        const targetHourNum = now.getHours();
 
-        const localNowPrefix = `${localYear}-${localMonth}-${localDate}T${localHour}:00`;
-
-        let startIndex = hourlyTimes.findIndex(t => t.startsWith(localNowPrefix));
-        if (startIndex === -1) {
-          const targetHourNum = now.getHours();
-          startIndex = hourlyTimes.findIndex(t => {
-            const h = parseInt(t.substring(11, 13));
-            return h === targetHourNum;
-          });
-          if (startIndex === -1) startIndex = 0;
-        }
+        let startIndex = hourlyTimes.findIndex(t => {
+          const h = parseInt(t.substring(11, 13));
+          return h === targetHourNum;
+        });
+        if (startIndex === -1) startIndex = 0;
 
         hourly24Weather.value = hourlyTimes.slice(startIndex, startIndex + 24).map((tStr, i) => {
           const hourNum = parseInt(tStr.substring(11, 13));
@@ -324,17 +381,14 @@ export function useWeather(showToast) {
           };
         });
 
-        // 7 天预报数据联动对齐：今天 (idx === 0) 强制使用与顶部【今日核心天气大卡片】完全一致的天气状况与图标！
         const weekDaysMap = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
         forecast7Days.value = dates.slice(0, 7).map((dStr, idx) => {
           const parts = dStr.split('-');
           const dt = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
           const tMax = Math.round(tempsMax[idx]);
           const tMin = Math.round(tempsMin[idx]);
-          const code = data.daily.weathercode[idx];
 
           if (idx === 0) {
-            // 第 0 天（今天）强制与顶部实况核心卡片保持 100% 对齐呼应，决不分离矛盾！
             return {
               dateStr: '今天',
               weekDay: weekDaysMap[dt.getDay()],
@@ -349,39 +403,51 @@ export function useWeather(showToast) {
           return {
             dateStr: `${parts[1]}-${parts[2]}`,
             weekDay: weekDaysMap[dt.getDay()],
-            icon: weatherService.getWeatherIconByCode(code),
-            condition: code >= 51 ? '阴雨' : (tMax > 28 ? '晴朗' : '多云'),
+            icon: weatherService.getWeatherIconByCode(data.daily.weathercode[idx]),
+            condition: weatherService.getWeatherIconByCode(data.daily.weathercode[idx]).includes('雨') ? '小雨' : '多云',
             tempMin: tMin,
             tempMax: tMax,
-            outfit: tMax >= 28 ? '短袖T恤' : (tMax >= 22 ? '短袖+薄外套' : '长袖外套')
+            outfit: tMax >= 28 ? '清凉防晒' : (tMax >= 22 ? '休闲舒适' : '薄外套保暖')
           };
         });
 
+        // ⭐ 强力重绘：API 数据返回更新后，必须显式触发 renderHourlyChart 重新渲染 Canvas！
         renderHourlyChart();
-        if (showToast) showToast(`${selectedCity.value} 天气走势已实时更新！`);
+
+        if (!isSilent && showToast) showToast(`已更新 ${selectedCity.value} 天气预报 ☀️`);
       }
     } catch (err) {
-      console.warn('天气 API 请求异常:', err);
-      if (showToast) showToast('已加载天气预报与穿衣指南');
+      console.warn('获取天气预报异常，启动降级预报方案:', err);
+      hourly24Weather.value = generateFallbackHourlyData();
+      renderHourlyChart();
+      if (!isSilent && showToast) showToast('天气更新失败，已显示保底数据', 'error');
     } finally {
       isWeatherLoading.value = false;
     }
   };
 
-  const locateUserGeo = () => {
-    if (!('geolocation' in navigator)) {
-      if (showToast) showToast('浏览器暂不支持自动定位，请手动选择城市', 'error');
-      return;
+  const selectCity = (city) => {
+    selectedCity.value = city.name;
+    fetchWeatherData(city.lat, city.lon, city.name);
+  };
+
+  const locateUserCity = () => {
+    if (navigator.geolocation) {
+      isWeatherLoading.value = true;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          fetchWeatherData(pos.coords.latitude, pos.coords.longitude, '当前位置');
+        },
+        (err) => {
+          isWeatherLoading.value = false;
+          fetchWeatherData(39.9042, 116.4074, '北京');
+          if (showToast) showToast('无法获取精确定位，已切回北京天气', 'info');
+        },
+        { timeout: 8000 }
+      );
+    } else {
+      fetchWeatherData(39.9042, 116.4074, '北京');
     }
-    if (showToast) showToast('正在定位您的地理位置...');
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        fetchWeatherData(pos.coords.latitude, pos.coords.longitude, '当前定位');
-      },
-      () => {
-        if (showToast) showToast('定位权限未开启，请在下拉框手动选择城市', 'error');
-      }
-    );
   };
 
   return {
@@ -391,9 +457,9 @@ export function useWeather(showToast) {
     todayWeather,
     hourly24Weather,
     forecast7Days,
+    selectCity,
+    locateUserCity,
     fetchWeatherData,
-    locateUserGeo,
-    onCityChange: () => fetchWeatherData(),
     renderHourlyChart
   };
 }
